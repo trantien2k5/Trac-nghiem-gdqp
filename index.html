@@ -2,56 +2,1116 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Ôn Tập Trắc Nghiệm GDQP</title>
 <style>
   :root{
     --bg: #F6F7FB;
     --bg-elev: #FFFFFF;
+    --bg-elev-2: #F0F2F8;
     --border: #E3E6EF;
     --indigo: #6366F1;
     --indigo-soft: #4F46E5;
+    --indigo-glow: rgba(99,102,241,0.10);
     --text: #14162A;
     --text-dim: #6B7086;
+    --text-faint: #9AA0B4;
+    --green: #0F9D63;
+    --green-bg: rgba(15,157,99,0.10);
+    --red: #E0473F;
+    --red-bg: rgba(224,71,63,0.09);
+    --amber: #C7830A;
     --radius: 16px;
+    --radius-sm: 10px;
     --shadow-card: 0 1px 2px rgba(20,22,42,0.04), 0 1px 1px rgba(20,22,42,0.03);
   }
-  *{box-sizing:border-box;}
-  html,body{margin:0; padding:0;}
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{margin:0; padding:0; height:100%;}
+  body{
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
   body{
     background: var(--bg);
     color: var(--text);
     font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     min-height: 100vh;
+    overflow-x: hidden;
   }
-  #app{ max-width: 560px; margin: 0 auto; padding: 28px 20px 32px; }
+  #app{
+    max-width: 560px;
+    margin: 0 auto;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 0 0 32px;
+  }
+
+  /* ---------- Top bar ---------- */
+  .topbar{
+    position: sticky; top:0; z-index: 20;
+    display:flex; align-items:center; gap:10px;
+    padding: 14px 18px;
+    background: rgba(246,247,251,0.88);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--border);
+  }
+  .topbar .back-btn{
+    width:34px; height:34px; border-radius:10px;
+    display:flex; align-items:center; justify-content:center;
+    background: var(--bg-elev-2); border:1px solid var(--border);
+    color: var(--text); cursor:pointer; flex-shrink:0;
+  }
+  .topbar .back-btn svg{width:18px;height:18px;}
+  .topbar .title{font-size:15px; font-weight:600; letter-spacing:-0.01em; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .topbar .meta{font-size:13px; color:var(--text-dim); font-variant-numeric: tabular-nums; flex-shrink:0;}
+  .timer-badge{
+    font-size:13px; font-weight:700; font-variant-numeric: tabular-nums;
+    padding: 6px 10px; border-radius:8px; background: var(--indigo-glow); color: var(--indigo);
+    flex-shrink:0;
+  }
+  .timer-badge.low-time{ background: var(--red-bg); color: var(--red); animation: pulseTime 1s infinite; }
+  @keyframes pulseTime{ 0%,100%{opacity:1;} 50%{opacity:0.55;} }
+
+  /* ---------- Home screen ---------- */
+  .home-hero{
+    padding: 28px 20px 6px;
+  }
   .eyebrow{
     font-size:12px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase;
     color: var(--indigo); margin-bottom:8px;
   }
-  h1{ font-size: 26px; font-weight: 700; letter-spacing:-0.02em; margin:0 0 6px; line-height:1.2; }
-  p.desc{ font-size: 14px; color: var(--text-dim); margin:0 0 20px; line-height:1.5; }
-  .hp-list{ display:flex; flex-direction:column; gap:12px; }
-  .hp-card{
-    display:block; text-decoration:none; color:inherit;
-    background: var(--bg-elev); border:1px solid var(--border); border-radius: var(--radius);
-    padding: 18px; box-shadow: var(--shadow-card);
+  .home-hero h1{
+    font-size: 26px; font-weight: 700; letter-spacing:-0.02em; margin:0 0 6px;
+    line-height:1.2;
   }
+  .home-hero p{
+    font-size: 14px; color: var(--text-dim); margin:0; line-height:1.5;
+  }
+  .stats-row{
+    display:flex; gap:10px; padding: 18px 20px 4px;
+  }
+  .stat-chip{
+    flex:1; background: var(--bg-elev); border:1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 12px 14px; box-shadow: var(--shadow-card);
+  }
+  .stat-chip .num{font-size:20px; font-weight:700; font-variant-numeric: tabular-nums; letter-spacing:-0.02em;}
+  .stat-chip .label{font-size:11px; color:var(--text-dim); margin-top:2px;}
+
+  .set-grid{
+    padding: 14px 16px 20px;
+    display:grid; grid-template-columns: 1fr 1fr; gap:12px;
+  }
+  .set-card{
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 16px 14px;
+    cursor:pointer;
+    position:relative;
+    overflow:hidden;
+    transition: transform .15s ease, border-color .15s ease;
+    box-shadow: var(--shadow-card);
+  }
+  .set-card:active{ transform: scale(0.97); }
+  .set-card.done{ border-color: rgba(99,102,241,0.35); }
+  .set-card .set-num{
+    font-size:11px; font-weight:700; color:var(--text-faint); letter-spacing:0.06em; text-transform:uppercase;
+  }
+  .set-card .set-range{
+    font-size:16px; font-weight:700; margin-top:4px; letter-spacing:-0.01em;
+  }
+  .set-card .set-progress{
+    margin-top: 10px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .set-card .score-badge{
+    font-size:12px; font-weight:700; padding: 3px 8px; border-radius:20px;
+    background: var(--green-bg); color: var(--green);
+  }
+  .set-card .score-badge.mid{ background: rgba(251,191,36,0.14); color: var(--amber); }
+  .set-card .score-badge.low{ background: var(--red-bg); color: var(--red); }
+  .set-card .start-label{
+    font-size:12px; color: var(--text-dim);
+  }
+  .set-card .bar-track{
+    height:4px; border-radius:4px; background: var(--border); margin-top:10px; overflow:hidden;
+  }
+  .set-card .bar-fill{
+    height:100%; background: linear-gradient(90deg, var(--indigo-soft), var(--indigo)); border-radius:4px;
+  }
+
+  .footer-note{
+    padding: 10px 24px 20px; text-align:center; color: var(--text-faint); font-size:12px;
+  }
+
+  /* ---------- HP list screen ---------- */
+  .hp-list{ display:flex; flex-direction:column; gap:12px; padding: 8px 16px 20px; }
+  .hp-card{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    background: var(--bg-elev); border:1px solid var(--border); border-radius: var(--radius);
+    padding: 18px; cursor:pointer; box-shadow: var(--shadow-card);
+  }
+  .hp-card:active{ transform: scale(0.98); }
   .hp-card .hp-name{ font-size:17px; font-weight:700; letter-spacing:-0.01em; }
   .hp-card .hp-desc{ font-size:13px; color: var(--text-dim); margin-top:4px; }
+  .hp-card .hp-arrow{ flex-shrink:0; color: var(--text-faint); }
+
+  /* ---------- Quiz screen ---------- */
+  .progress-wrap{
+    padding: 12px 18px 0;
+  }
+  .progress-track{
+    height:6px; background: var(--border); border-radius:6px; overflow:hidden;
+  }
+  .progress-fill{
+    height:100%; background: linear-gradient(90deg, var(--indigo-soft), var(--indigo));
+    border-radius:6px; transition: width .35s cubic-bezier(.4,0,.2,1);
+  }
+  .dot-row{
+    display:flex; gap:4px; padding: 10px 18px 0; flex-wrap:wrap;
+  }
+  .dot{
+    width:8px; height:8px; border-radius:50%; background: var(--border); flex-shrink:0;
+  }
+  .dot.answered-correct{ background: var(--green); }
+  .dot.answered-wrong{ background: var(--red); }
+  .dot.answered-neutral{ background: var(--indigo); }
+  .dot.dot-flagged{ box-shadow: 0 0 0 2px var(--amber); }
+  .dot.current{ outline: 2px solid var(--indigo); outline-offset:2px; }
+
+  .qcard{
+    margin: 18px 16px 0;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px 18px;
+    box-shadow: var(--shadow-card);
+  }
+  .qcard .qnum{
+    font-size:12px; font-weight:700; color: var(--indigo); letter-spacing:0.05em; margin-bottom:10px;
+  }
+  .qcard-head{
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:2px;
+  }
+  .qcard-head .qnum{ margin-bottom:0; }
+  .flag-btn{
+    display:flex; align-items:center; gap:5px;
+    font-size:12px; font-weight:700; color: var(--text-faint);
+    border: 1px solid var(--border); border-radius: 20px; padding: 5px 10px 5px 8px;
+    cursor:pointer; flex-shrink:0;
+  }
+  .flag-btn svg{ width:14px; height:14px; }
+  .flag-btn.flagged{ color: var(--amber); border-color: rgba(199,131,10,0.35); background: rgba(199,131,10,0.08); }
+  .flag-btn.flagged svg{ fill: var(--amber); }
+  .qcard .qtext{
+    font-size: 17px; font-weight:600; line-height:1.5; letter-spacing:-0.01em; color: var(--text);
+  }
+
+  .options{
+    padding: 14px 16px 0;
+    display:flex; flex-direction:column; gap:10px;
+  }
+  .option{
+    display:flex; align-items:flex-start; gap:12px;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px 14px;
+    font-size:15px; line-height:1.45;
+    cursor:pointer;
+    transition: border-color .15s ease, background .15s ease;
+    box-shadow: var(--shadow-card);
+  }
+  .option:active{ background: var(--bg-elev-2); }
+  .option .letter{
+    flex-shrink:0; width:26px; height:26px; border-radius:8px;
+    background: var(--bg-elev-2); border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center;
+    font-size:12px; font-weight:700; color: var(--text-dim);
+  }
+  .option .otext{ flex:1; padding-top:2px; }
+  .option .mark{ flex-shrink:0; width:20px; height:20px; margin-top:2px; }
+
+  .option.selected-pending{ border-color: var(--indigo); background: var(--indigo-glow); }
+  .option.correct-reveal{ border-color: var(--green); background: var(--green-bg); }
+  .option.correct-reveal .letter{ background: var(--green); border-color: var(--green); color: #06281C; }
+  .option.wrong-reveal{ border-color: var(--red); background: var(--red-bg); }
+  .option.wrong-reveal .letter{ background: var(--red); border-color: var(--red); color: #340B0B; }
+  .option.dim{ opacity: 0.5; }
+
+  .feedback-banner{
+    margin: 14px 16px 0;
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    font-size: 14px; font-weight:600;
+    display:flex; align-items:center; gap:8px;
+  }
+  .feedback-banner.correct{ background: var(--green-bg); color: var(--green); }
+  .feedback-banner.wrong{ background: var(--red-bg); color: var(--red); }
+
+  .quiz-nav{
+    padding: 18px 16px 8px;
+    display:flex; gap:10px;
+  }
+  .btn{
+    flex:1; border:none; border-radius: var(--radius-sm);
+    padding: 15px 18px; font-size:15px; font-weight:700;
+    cursor:pointer; letter-spacing:-0.01em;
+    display:flex; align-items:center; justify-content:center; gap:6px;
+  }
+  .btn-primary{
+    background: linear-gradient(180deg, var(--indigo), var(--indigo-soft));
+    color:#fff;
+    box-shadow: 0 6px 20px -6px rgba(99,102,241,0.6);
+  }
+  .btn-primary:disabled{ opacity:0.35; box-shadow:none; }
+  .btn-ghost{
+    background: var(--bg-elev-2); color: var(--text); border:1px solid var(--border);
+  }
+  .btn-ghost:disabled{ opacity: 0.3; }
+  .btn:active:not(:disabled){ transform: scale(0.98); }
+
+  /* ---------- Result screen ---------- */
+  .result-hero{
+    padding: 30px 20px 10px;
+    text-align:center;
+  }
+  .score-ring{
+    width:150px; height:150px; margin: 6px auto 18px;
+    position:relative;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .score-ring svg{ position:absolute; top:0; left:0; transform: rotate(-90deg); }
+  .score-ring .score-num{ font-size:34px; font-weight:800; letter-spacing:-0.02em; }
+  .score-ring .score-den{ font-size:13px; color: var(--text-dim); margin-top:2px; }
+  .result-hero .verdict{ font-size:19px; font-weight:700; margin-top:4px; }
+  .result-hero .subverdict{ font-size:14px; color:var(--text-dim); margin-top:4px; }
+
+  .result-actions{
+    display:flex; gap:10px; padding: 18px 16px 4px;
+  }
+
+  .review-list{ padding: 8px 16px 0; }
+  .review-header{
+    font-size:13px; font-weight:700; color: var(--text-dim); text-transform:uppercase; letter-spacing:0.06em;
+    padding: 18px 4px 10px;
+  }
+  .review-item{
+    background: var(--bg-elev); border:1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 14px; margin-bottom:10px;
+    box-shadow: var(--shadow-card);
+  }
+  .review-item .r-top{ display:flex; gap:10px; align-items:flex-start; }
+  .review-item .r-badge{
+    flex-shrink:0; width:22px; height:22px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; margin-top:1px;
+  }
+  .review-item .r-badge.ok{ background: var(--green-bg); color: var(--green); }
+  .review-item .r-badge.bad{ background: var(--red-bg); color: var(--red); }
+  .review-item .r-q{ font-size:14.5px; font-weight:600; line-height:1.45; }
+  .review-item .r-answer{
+    font-size:13.5px; margin-top:8px; padding-left:32px; line-height:1.5;
+  }
+  .review-item .r-answer .lbl{ color: var(--text-faint); font-weight:600; }
+  .review-item .r-answer.ok-text{ color: var(--green); }
+  .review-item .r-answer.bad-text{ color: var(--red); }
+  .review-item .r-correct-line{ font-size:13.5px; padding-left:32px; margin-top:4px; color: var(--green); }
+
+  .hidden{ display:none !important; }
+
+  /* ---------- Confirm modal ---------- */
+  .modal-overlay{
+    position:fixed; inset:0; z-index:100;
+    background: rgba(20,22,42,0.35);
+    display:flex; align-items:flex-end; justify-content:center;
+  }
+  .modal-sheet{
+    width:100%; max-width:560px;
+    background: var(--bg-elev);
+    border-radius: 20px 20px 0 0;
+    padding: 22px 20px calc(20px + env(safe-area-inset-bottom));
+    box-shadow: 0 -8px 30px rgba(20,22,42,0.15);
+  }
+  .modal-sheet .modal-title{ font-size:16px; font-weight:700; margin-bottom:6px; }
+  .modal-sheet .modal-body{ font-size:14px; color: var(--text-dim); line-height:1.5; margin-bottom:18px; }
+  .modal-sheet .modal-actions{ display:flex; gap:10px; }
+
+  .mode-option{
+    display:flex; align-items:center; gap:12px;
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 14px; margin-bottom:10px; cursor:pointer;
+    background: var(--bg-elev);
+  }
+  .mode-option:active{ background: var(--bg-elev-2); }
+  .mode-option .mode-icon{
+    flex-shrink:0; width:38px; height:38px; border-radius:10px;
+    display:flex; align-items:center; justify-content:center;
+    background: var(--indigo-glow); color: var(--indigo);
+  }
+  .mode-option .mode-icon svg{ width:19px; height:19px; }
+  .mode-option .mode-text{ flex:1; }
+  .mode-option .mode-name{ font-size:14.5px; font-weight:700; }
+  .mode-option .mode-desc{ font-size:12.5px; color: var(--text-dim); margin-top:2px; line-height:1.4; }
+
+  .mode-tag{
+    display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:20px;
+    background: var(--indigo-glow); color: var(--indigo); margin-left:6px; vertical-align:middle;
+  }
+
+  /* ---------- Navigator modal ---------- */
+  .nav-modal-sheet{
+    width:100%; max-width:560px;
+    background: var(--bg-elev);
+    border-radius: 20px 20px 0 0;
+    padding: 20px 20px calc(18px + env(safe-area-inset-bottom));
+    box-shadow: 0 -8px 30px rgba(20,22,42,0.15);
+    max-height: 82vh;
+    display:flex; flex-direction:column;
+  }
+  .nav-modal-title{ font-size:16px; font-weight:700; margin-bottom:4px; }
+  .nav-summary{
+    display:flex; gap:14px; font-size:12.5px; color: var(--text-dim); margin-bottom:16px;
+  }
+  .nav-summary .dot-legend{ display:inline-flex; align-items:center; gap:5px; }
+  .nav-summary .dot-legend .sw{ width:8px; height:8px; border-radius:50%; }
+  .nav-grid{
+    display:grid; grid-template-columns: repeat(5, 1fr); gap:8px;
+    overflow-y:auto; padding-bottom:4px;
+  }
+  .nav-cell{
+    aspect-ratio: 1/1; border-radius:10px; border:1.5px solid var(--border);
+    display:flex; align-items:center; justify-content:center;
+    font-size:13.5px; font-weight:700; color: var(--text-dim);
+    background: var(--bg-elev); cursor:pointer; position:relative;
+  }
+  .nav-cell.is-current{ border-color: var(--indigo); box-shadow: 0 0 0 2px var(--indigo-glow); }
+  .nav-cell.is-answered{ background: var(--indigo); border-color: var(--indigo); color:#fff; }
+  .nav-cell.is-flagged::after{
+    content:''; position:absolute; top:-3px; right:-3px; width:9px; height:9px; border-radius:50%;
+    background: var(--amber); border:2px solid var(--bg-elev);
+  }
+  .nav-modal-actions{ display:flex; gap:10px; margin-top:16px; }
+
+  @media (max-width: 360px){
+    .home-hero h1{ font-size:22px; }
+    .qcard .qtext{ font-size:16px; }
+  }
 </style>
 </head>
 <body>
 <div id="app">
-  <div class="eyebrow">GDQP</div>
-  <h1>Ôn Tập Trắc Nghiệm</h1>
-  <p class="desc">Chọn học phần để bắt đầu ôn tập.</p>
-  <div class="hp-list">
-    <a class="hp-card" href="hp2/">
-      <div class="hp-name">Học phần 2</div>
-      <div class="hp-desc">160 câu · 8 đề</div>
-    </a>
+
+  <!-- ============ HP LIST SCREEN ============ -->
+  <div id="screen-hplist">
+    <div class="home-hero">
+      <div class="eyebrow">GDQP</div>
+      <h1>Ôn Tập Trắc Nghiệm</h1>
+      <p>Chọn học phần để bắt đầu ôn tập.</p>
+    </div>
+    <div class="hp-list">
+      <div class="hp-card" id="hp-card-2">
+        <div>
+          <div class="hp-name">Học phần 2</div>
+          <div class="hp-desc">160 câu · 8 đề</div>
+        </div>
+        <svg class="hp-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+    </div>
   </div>
+
+  <!-- ============ HOME SCREEN ============ -->
+  <div id="screen-home" class="hidden">
+    <div class="topbar">
+      <div class="back-btn" id="home-back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </div>
+      <div class="title">Học phần 2</div>
+    </div>
+    <div class="home-hero">
+      <div class="eyebrow">160 câu · 8 đề</div>
+      <h1>Ôn Tập Trắc Nghiệm</h1>
+      <p>Chọn một đề để bắt đầu. Mỗi đề gồm 20 câu, đáp án được xáo trộn ngẫu nhiên mỗi lần làm.</p>
+    </div>
+    <div class="stats-row">
+      <div class="stat-chip">
+        <div class="num" id="stat-attempted">0/8</div>
+        <div class="label">Đề đã làm</div>
+      </div>
+      <div class="stat-chip">
+        <div class="num" id="stat-avg">—</div>
+        <div class="label">Điểm TB</div>
+      </div>
+      <div class="stat-chip">
+        <div class="num" id="stat-best">—</div>
+        <div class="label">Điểm cao nhất</div>
+      </div>
+    </div>
+    <div class="set-grid" id="set-grid"></div>
+    <div class="footer-note">Dữ liệu lưu trên máy bạn (localStorage)</div>
+  </div>
+
+  <!-- ============ QUIZ SCREEN ============ -->
+  <div id="screen-quiz" class="hidden">
+    <div class="topbar">
+      <div class="back-btn" id="quiz-back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </div>
+      <div class="title" id="quiz-title">Đề 1</div>
+      <div class="meta" id="quiz-counter">1/20</div>
+      <div class="timer-badge hidden" id="timer-badge">15:00</div>
+      <div class="back-btn" id="nav-grid-btn" style="display:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      </div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+    </div>
+    <div class="dot-row" id="dot-row"></div>
+
+    <div class="qcard">
+      <div class="qcard-head">
+        <div class="qnum" id="q-num-label">CÂU 1</div>
+        <div class="flag-btn hidden" id="flag-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v18M5 4h11l-2.5 3.5L16 11H5"/></svg>
+          <span id="flag-btn-label">Đánh dấu</span>
+        </div>
+      </div>
+      <div class="qtext" id="q-text"></div>
+    </div>
+
+    <div class="options" id="options-container"></div>
+
+    <div class="feedback-banner hidden" id="feedback-banner"></div>
+
+    <div class="quiz-nav">
+      <button class="btn btn-ghost" id="btn-prev">Trước</button>
+      <button class="btn btn-primary" id="btn-next" disabled>Tiếp theo</button>
+    </div>
+  </div>
+
+  <!-- ============ RESULT SCREEN ============ -->
+  <div id="screen-result" class="hidden">
+    <div class="topbar">
+      <div class="back-btn" id="result-home-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </div>
+      <div class="title">Kết quả</div>
+      <div class="meta" id="result-set-label"></div>
+    </div>
+
+    <div class="result-hero">
+      <div class="score-ring">
+        <svg width="150" height="150" viewBox="0 0 150 150">
+          <circle cx="75" cy="75" r="66" fill="none" stroke="var(--border)" stroke-width="10"/>
+          <circle id="ring-progress" cx="75" cy="75" r="66" fill="none" stroke="url(#gradRing)" stroke-width="10" stroke-linecap="round"/>
+          <defs>
+            <linearGradient id="gradRing" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#6366F1"/>
+              <stop offset="100%" stop-color="#818CF8"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div>
+          <div class="score-num" id="score-num">0</div>
+          <div class="score-den" id="score-den">/ 20</div>
+        </div>
+      </div>
+      <div class="verdict" id="result-verdict">—</div>
+      <div class="subverdict" id="result-subverdict">—</div>
+    </div>
+
+    <div class="result-actions">
+      <button class="btn btn-ghost" id="btn-retry">Làm lại đề này</button>
+      <button class="btn btn-primary" id="btn-choose-other">Chọn đề khác</button>
+    </div>
+
+    <div class="review-list">
+      <div class="review-header">Xem lại chi tiết</div>
+      <div id="review-container"></div>
+    </div>
+  </div>
+
+  <!-- ============ MODE SELECT MODAL ============ -->
+  <div id="mode-modal" class="modal-overlay hidden">
+    <div class="modal-sheet">
+      <div class="modal-title" id="mode-modal-title">Đề 1</div>
+      <div class="modal-body">Chọn cách làm bài</div>
+      <div class="mode-option" id="mode-practice">
+        <div class="mode-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <div class="mode-text">
+          <div class="mode-name">Luyện tập</div>
+          <div class="mode-desc">Chọn đáp án là biết ngay đúng hay sai</div>
+        </div>
+      </div>
+      <div class="mode-option" id="mode-exam">
+        <div class="mode-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+        </div>
+        <div class="mode-text">
+          <div class="mode-name">Thi thử</div>
+          <div class="mode-desc">Tính giờ, đánh dấu câu khó, nộp bài rồi mới chấm điểm</div>
+        </div>
+      </div>
+      <button class="btn btn-ghost" id="mode-cancel" style="width:100%; margin-top:2px;">Hủy</button>
+    </div>
+  </div>
+
+  <!-- ============ QUESTION NAVIGATOR MODAL ============ -->
+  <div id="navigator-modal" class="modal-overlay hidden">
+    <div class="nav-modal-sheet">
+      <div class="nav-modal-title">Tổng quan bài làm</div>
+      <div class="nav-summary">
+        <span class="dot-legend"><span class="sw" style="background:var(--indigo)"></span> Đã làm</span>
+        <span class="dot-legend"><span class="sw" style="background:var(--border)"></span> Chưa làm</span>
+        <span class="dot-legend"><span class="sw" style="background:var(--amber)"></span> Đánh dấu</span>
+      </div>
+      <div class="nav-grid" id="nav-grid"></div>
+      <div class="nav-modal-actions">
+        <button class="btn btn-ghost" id="nav-modal-close">Tiếp tục làm bài</button>
+        <button class="btn btn-primary" id="nav-modal-submit">Nộp bài</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SUBMIT CONFIRM MODAL ============ -->
+  <div id="submit-modal" class="modal-overlay hidden">
+    <div class="modal-sheet">
+      <div class="modal-title">Nộp bài thi?</div>
+      <div class="modal-body" id="submit-modal-body">Bạn còn câu chưa làm. Vẫn muốn nộp bài?</div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="submit-modal-cancel">Làm tiếp</button>
+        <button class="btn btn-primary" id="submit-modal-confirm">Nộp bài</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ CONFIRM MODAL ============ -->
+  <div id="confirm-modal" class="modal-overlay hidden">
+    <div class="modal-sheet">
+      <div class="modal-title">Thoát đề đang làm?</div>
+      <div class="modal-body">Kết quả của đề này sẽ không được lưu lại.</div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="modal-cancel">Ở lại</button>
+        <button class="btn btn-primary" id="modal-confirm">Thoát</button>
+      </div>
+    </div>
+  </div>
+
 </div>
+
+<script>
+/* =========================================================
+   DATA
+   ========================================================= */
+const QUESTIONS = [{"id": 1, "q": "Lực lượng nào tiến hành bạo loạn lật đổ?", "options": ["Lực lượng phản động hay lực lượng ly khai, đối lập trong nước hoặc cấu kết với nước ngoài", "Chủ nghĩa đế quốc và các thế lực phản động tiến hành", "Lực lượng lực lượng ly khai, đối lập trong nước hoặc cấu kết với nước ngoài", "Lực lượng phản động nước ngoài hay lực lượng ly khai, đối lập trong nước hoặc cấu kết với bất mãn"], "answer": "Lực lượng phản động hay lực lượng ly khai, đối lập trong nước hoặc cấu kết với nước ngoài"}, {"id": 2, "q": "Hình thức bạo loạn lật đổ?", "options": ["Bạo loạn quân sự, bạo loạn vũ trang hoặc bạo loạn chính trị kết hợp với vũ trang", "Bạo loạn vũ trang hoặc bạo loạn chính trị kết hợp với vũ trang", "Bạo loạn chính trị, bạo loạn vũ trang, bạo loạn chính trị kết hợp với vũ trang", "Bạo loạn vũ lực, bạo loạn vũ trang hoặc bạo loạn chính trị kết hợp với vũ trang"], "answer": "Bạo loạn chính trị, bạo loạn vũ trang, bạo loạn chính trị kết hợp với vũ trang"}, {"id": 3, "q": "Một trong những mục tiêu của chiến lược \"Diễn biến hòa bình\" chống phá Việt Nam?", "options": ["Xóa bỏ vai trò, sức mạnh của nhân dân Việt Nam", "Xóa bỏ vai trò lãnh đạo của Đảng Cộng sản Việt Nam", "Xóa bỏ vai trò tổ chức của Quân đội nhân dân Việt Nam", "Xóa bỏ vai trò quản lý của Công an nhân dân Việt Nam"], "answer": "Xóa bỏ vai trò lãnh đạo của Đảng Cộng sản Việt Nam"}, {"id": 4, "q": "Một trong những nội dung chủ yếu của chiến lược \"Diễn biến hòa bình\" chống phá Việt Nam?", "options": ["Xóa bỏ vai trò quản lý của Quân đội nhân dân Việt Nam", "Chia rẽ tình đoàn kết hữu nghị giữa Việt Nam với Lào, Campuchia, Trung Quốc", "Phủ nhận vai trò lãnh đạo của Đảng trong lĩnh vực quốc phòng, an ninh và đối với lực lượng vũ trang", "Chống phá về chính trị tư tưởng, văn hóa"], "answer": "Chống phá về chính trị tư tưởng, văn hóa"}, {"id": 5, "q": "Một trong những nội dung chống phá trên lĩnh vực tư tưởng, văn hóa trong chiến lược \"Diễn biến hòa bình\" của các thế lực thù địch đối với cách mạng Việt Nam?", "options": ["Xóa bỏ hệ tư tưởng của Nhà nước xã hội chủ nghĩa.", "Xóa bỏ nền tảng chủ nghĩa Mác- Lênin, tư tưởng Hồ Chí Minh.", "Xoá bỏ vai trò quản lý điều hành của Nhà nước xã hội chủ nghĩa.", "Xoá bỏ vai trò lãnh đạo của các tổ chức chính trị xã hội."], "answer": "Xóa bỏ nền tảng chủ nghĩa Mác- Lênin, tư tưởng Hồ Chí Minh."}, {"id": 6, "q": "Một trong những nội dung chống phá trên lĩnh vực tư tưởng, văn hóa trong chiến lược \"Diễn biến hòa bình\" của các thế lực thù địch đối với cách mạng Việt Nam?", "options": ["Kích động đòi thực hiện chế độ \"đa nguyên chính trị, đa Đảng đối lập\"", "Từng bước làm mất vai trò chủ đạo của thành phần kinh tế nhà nước", "Dùng ngoại giao thân thiện để hỗ trợ, hậu thuẫn, thông qua các tổ chức phi chính phủ để tiếp cận", "Phủ nhận, thay đổi vai trò lãnh đạo của Đảng trong lĩnh vực quốc phòng, an ninh và đối với lực lượng vũ trang"], "answer": "Kích động đòi thực hiện chế độ \"đa nguyên chính trị, đa Đảng đối lập\""}, {"id": 7, "q": "Một trong những nội dung chống phá trên lĩnh vực quốc phòng, an ninh trong chiến lược \"Diễn biến hòa bình\" của các thế lực thù địch đối với cách mạng Việt Nam?", "options": ["Kích động lôi kéo Quân đội, Công an, mua chuộc quân nhân, sĩ quan", "Tìm mọi cách hạ thấp uy tín, vai trò, trách nhiệm của Việt Nam trên trường quốc tế", "Chúng tìm mọi cách \"Phi chính trị hóa\", làm cho Quân đội, Công an xa rời mục tiêu chiến đấu.", "Xoá bỏ nền tảng chủ nghĩa Mác- Lênin, tư tưởng Hồ Chí Minh, đường lối của đảng"], "answer": "Chúng tìm mọi cách \"Phi chính trị hóa\", làm cho Quân đội, Công an xa rời mục tiêu chiến đấu."}, {"id": 8, "q": "Một trong những nội dung chống phá trên lĩnh vực ngoại giao trong chiến lược \"Diễn biến hòa bình\" của các thế lực thù địch đối với cách mạng Việt Nam?", "options": ["Tìm mọi cách hạ thấp uy tín của Việt Nam trên trường quốc tế", "Chia rẽ mối đoàn kết với các nước láng giềng, trong khu vực", "Thông qua mạng xã hội đẩy mạnh xâm nhập, tác động, phá hoại vai trò, uy tín của Việt Nam", "Xóa bỏ vai trò quản lý điều hành của Nhà nước xã hội chủ nghĩa."], "answer": "Tìm mọi cách hạ thấp uy tín của Việt Nam trên trường quốc tế"}, {"id": 9, "q": "Một trong những thủ đoạn trong chiến lược \"Diễn biến hòa bình\", bạo loạn lật đồ của các thế lực thù địch chống phá cách mạng Việt Nam hiện nay?", "options": ["Thành lập nhiều nhóm phản động công khai chống phá chính quyền", "Tích cực \"đầu tư, kích cầu\" trên lĩnh vực giáo dục, đào tạo để \"chuyển hóa\" thế hệ trẻ Việt Nam", "Xóa bỏ vai trò quản lý điều hành của Nhà nước xã hội chủ nghĩa.", "Gây ra bạo loạn quân sự, bạo loạn vũ trang hoặc bạo loạn chính trị kết hợp với vũ trang"], "answer": "Tích cực \"đầu tư, kích cầu\" trên lĩnh vực giáo dục, đào tạo để \"chuyển hóa\" thế hệ trẻ Việt Nam"}, {"id": 10, "q": "Một trong những phương châm tiến hành phòng chống \"Diễn biến hòa bình\", bạo loạn lật", "options": ["Giữ vững ổn định từ bên trong, chủ động phòng ngừa", "Làm tốt công tác giáo dục chính trị, tự tưởng cho đội ngũ cán bộ, viên chức Nhà nước C)", "Tranh thủ sự ủng hộ của nhân dân thế giới, kịp thời làm thất bại âm mưu, thủ đoạn chống phá của kẻ thù đối với Việt Nam", "Phát huy sức mạnh tổng hợp của khối đại đoàn kết dân tộc của cả hệ thống chính trị"], "answer": "Giữ vững ổn định từ bên trong, chủ động phòng ngừa"}, {"id": 11, "q": "Một trong những giải pháp phòng chống \"Diễn biến hòa bình\", bạo loạn lật đổ ở Việt Nam hiện nay?", "options": ["Giữ vững sự ổn định chính trị của đất nước, trật tự xã hội", "Chăm lo nâng cao đời sống vật chất, tinh thần cho quân nhân", "Xây dựng ý thức bảo vệ Tổ quốc cho toàn dân", "Xử lý tình huống và giải quyết hậu quả"], "answer": "Xây dựng ý thức bảo vệ Tổ quốc cho toàn dân"}, {"id": 12, "q": "Một trong những giải pháp phòng chống \"Diễn biến hòa bình\", bạo loạn lật đổ ở Việt Nam hiện nay?", "options": ["Giữ vững sự lãnh đạo, vai trò cầm quyền của Đảng đối với toàn xã hội", "Nâng cao sự nghiệp công nghiệp hóa đất nước, các ngành công nghiệp", "Làm tốt công tác giáo dục chính trị, tư tưởng cho đội ngũ cán bộ, viên chức", "Xây dựng cơ sở chính trị- xã hội vững mạnh về mọi mặt"], "answer": "Xây dựng cơ sở chính trị- xã hội vững mạnh về mọi mặt"}, {"id": 13, "q": "Một trong những giải pháp phòng chống \"Diễn biến hòa bình\", bạo loạn lật đổ ở Việt Nam hiện nay?", "options": ["Giữ vững sự ổn định chính trị của đất nước", "Nâng cao sự nghiệp công nghiệp hóa, hiện đại hóa đất nước", "Chăm lo xây dựng lực lượng vũ trang ở địa phương vững mạnh", "Làm tốt công tác giáo dục chính trị, tư tưởng cho đội ngũ cán bộ, viên chức Nhà nước"], "answer": "Chăm lo xây dựng lực lượng vũ trang ở địa phương vững mạnh"}, {"id": 14, "q": "Chủ nghĩa đế quốc coi chiến lược \"Diễn biến hòa bình\" là gì?", "options": ["Là chiến lược chủ yếu", "Là chiến lược cơ bản", "Là chiến lược lâu dài", "Là chiến lược trước mắt"], "answer": "Là chiến lược cơ bản"}, {"id": 15, "q": "Một trong những đặc điểm tình hình quan hệ dân tộc trên thế giới?", "options": ["Toàn cầu hóa và các vấn đề toàn cầu làm cho sự hiểu biết lẫn nhau giữa các dân tộc tăng lên, thúc đẩy xu thế khu vực hóa", "Toàn cầu hóa làm cho các dân tộc hiểu biết lẫn nhau giữa tăng lên, thúc đẩy xu thế khu vực hóa", "Vấn đề toàn cầu làm cho tác động lẫn nhau giữa các dân tộc tăng lên", "Quan hệ dân tộc, sắc tộc vẫn diễn ra giao lưu ở khu vực"], "answer": "Toàn cầu hóa và các vấn đề toàn cầu làm cho sự hiểu biết lẫn nhau giữa các dân tộc tăng lên, thúc đẩy xu thế khu vực hóa"}, {"id": 16, "q": "Một trong những quan điểm của chủ nghĩa Mác - Lênin về vấn đề dân tộc?", "options": ["Vấn đề dân tộc còn tồn tại loài người", "Vấn đề dân tộc còn tồn tại lâu dài trong xã hội loài người", "Vấn đề dân tộc còn tồn tại song song trong xã hội phong kiến", "Độc lập dân tộc là quyền thiêng liêng nhất của các dân tộc, không ai có quyền xâm phạm"], "answer": "Vấn đề dân tộc còn tồn tại lâu dài trong xã hội loài người"}, {"id": 17, "q": "Một trong những quan điểm của chủ nghĩa Mác - Lênin về vấn đề dân tộc?", "options": ["Vấn đề dân tộc là vấn đề chiến lược của cách mạng xã hội chủ nghĩa", "Vấn đề dân tộc là vấn đề chiến lược của xã hội tư bản", "Vấn đề dân tộc còn tồn tại song song trong xã hội phong kiến", "Quan hệ dân tộc, sắc tộc diễn ra hết sức bình thường, nóng bỏng ở khu vực quốc gia và quốc tế"], "answer": "Vấn đề dân tộc là vấn đề chiến lược của cách mạng xã hội chủ nghĩa"}, {"id": 18, "q": "Giai quyet van de dan toc theo quan diem cua V.1. Lenin?", "options": ["Các dân tộc hợp tác, các dân tộc được quyền tự quyết, liên hiệp công nhân tất cả các dân tộc", "Các dân tộc hoàn toàn bình đẳng, các dân tộc được quyền tự quyết, liên hiệp công nhân tất cả các dân tộc", "Các dân tộc hoàn toàn bình đẳng, các dân tộc được quyền tự tự chủ, tự lực, tự cường", "Các dân tộc hoàn toàn bình đẳng, các dân tộc được quyền tự tự chủ, tự lực, liên hiệp công nhân tất cả các dân tộc"], "answer": "Các dân tộc hoàn toàn bình đẳng, các dân tộc được quyền tự quyết, liên hiệp công nhân tất cả các dân tộc"}, {"id": 19, "q": "Giải quyết vấn đề dân tộc trong tư tưởng Hồ Chí Minh?", "options": ["Các dân tộc ở Việt Nam có quy mô dân số và trình độ phát triển kinh tế- xã hội không đều nhau", "Không ai có quyền xâm phạm, thể hiện quyền làm chủ của nhân dân đối với đất nước", "Phải kiên quyết giành độc lập dân tộc, giải phóng dân tộc đem lại tự do, hạnh phúc cho nhân dân", "Cách mạng Việt Nam là một bộ phận của cách mạng thế giới"], "answer": "Phải kiên quyết giành độc lập dân tộc, giải phóng dân tộc đem lại tự do, hạnh phúc cho nhân dân"}, {"id": 20, "q": "Một trong những đặc điểm các dân tộc Việt Nam?", "options": ["Các dân tộc ở Việt Nam có tinh thần đoàn kết chống giặc ngoại xâm, xây dựng đất nước", "Các dân tộc Việt Nam có tinh thần đoàn kết gắn bó xây dựng quốc gia dân tộc thống nhất.", "Củng cố mối quan hệ tốt đẹp giữa dân tộc Việt Nam với các dân tộc trên thế giới", "Các dân tộc ở Việt Nam có quy mô dân số, kinh tế- xã hội đều nhau"], "answer": "Các dân tộc Việt Nam có tinh thần đoàn kết gắn bó xây dựng quốc gia dân tộc thống nhất."}, {"id": 21, "q": "Mot trong nhung quan diem giai quyet van de dan toc cua Dang, Nha nuoc ta hien nay?", "options": ["Củng cố mối quan hệ tốt đẹp giữa dân tộc Việt Nam với các dân tộc trên thế giới", "Các dân tộc ở Việt Nam được quyền tự quyết, chung sống hòa bình, hữu nghị", "Vấn đề dân tộc và đoàn kết các dân tộc có vị trí chiến lược lâu dài trong sự nghiệp cách mạng nước ta hiện nay", "Các dân tộc Việt Nam có tinh thần đoàn kết gắn bó xây dựng quốc gia dân tộc thống nhất"], "answer": "Vấn đề dân tộc và đoàn kết các dân tộc có vị trí chiến lược lâu dài trong sự nghiệp cách mạng nước ta hiện nay"}, {"id": 22, "q": "Một trong những đặc điểm giải quyết vấn đề dân tộc của Đảng, Nhà nước ta hiện nay?", "options": ["Củng cố mối quan hệ tốt đẹp giữa dân tộc Việt Nam với các dân tộc trên thế giới", "Vấn đề dân tộc là vấn đề cần giải quyết giữa các dân tộc diễn ra trên mọi lĩnh vực của đời sống xã hội", "Phát triển toàn diện chính trị, kinh tế, văn hóa, xã hội, an ninh- quốc phòng trên địa bàn dân tộc và miền núi", "Các dân tộc Việt Nam có tinh thần đoàn kết gắn bó xây dựng quốc gia dân tộc thống nhất"], "answer": "Phát triển toàn diện chính trị, kinh tế, văn hóa, xã hội, an ninh- quốc phòng trên địa bàn dân tộc và miền núi"}, {"id": 23, "q": "Một trong những nguồn gốc của tôn giáo?", "options": ["Nguồn gốc xã hội", "Nguồn gốc kinh tế - xã hội", "Nguồn gốc tình cảm", "Nguồn gốc nhân dân"], "answer": "Nguồn gốc kinh tế - xã hội"}, {"id": 24, "q": "Một trong những nguồn gốc của tôn giáo?", "options": ["Nguồn gốc mê tín", "Nguồn gốc nhận thức", "Nguồn gốc xã hội", "Nguồn gốc văn hóa"], "answer": "Nguồn gốc nhận thức"}, {"id": 25, "q": "Một trong những nguồn gốc của tôn giáo?", "options": ["Nguồn gốc tâm linh", "Nguồn gốc tâm lý", "Nguồn gốc tình cảm", "Nguồn gốc ý thức"], "answer": "Nguồn gốc tâm lý"}, {"id": 26, "q": "Một trong những tỉnh chất của tôn giáo?", "options": ["Tính cách mạng", "Tính lịch sử", "Tính xã hội", "Tính nhân dân"], "answer": "Tính lịch sử"}, {"id": 27, "q": "Một trong những tính chất của tôn giáo?", "options": ["Tính dân chủ", "Tính quần chúng", "Tính tâm lý", "Tính tình cảm"], "answer": "Tính quần chúng"}, {"id": 28, "q": "Một trong những tỉnh chất của tôn giáo?", "options": ["Tính nhân quyền", "Tĩnh chính trị", "Tình tín ngưỡng", "Tỉnh dân chủ"], "answer": "Tĩnh chính trị"}, {"id": 29, "q": "Quan điểm của Chủ nghĩa Mác – Lênin về giải quyết vấn đề tôn giáo trong cách mạng xã hội chủ nghĩa", "options": ["Giải quyết vấn đề tôn giáo phải gần với quá trình cải tạo xã hội cũ, xây dựng xã hội mới", "Tôn giáo còn là một tác nhân quan trọng tạo nên những xung đột ở nhiều nơi trên thế giới", "Phải kiên quyết giành độc lập dân tộc, giải phóng dân tộc đem lại tự do, hạnh phúc cho nhân dân", "Tôn giáo ra đời, phát triển và tồn tại trong những điều kiện kinh tế - xã hội nhất định"], "answer": "Giải quyết vấn đề tôn giáo phải gần với quá trình cải tạo xã hội cũ, xây dựng xã hội mới"}, {"id": 30, "q": "Chính sách tôn giáo của Đăng và Nhà nước ta hiện nay?", "options": ["Mọi tín đồ đều có quyền tự do hành đạo hợp pháp theo quy định của pháp luật", "Xây dựng khối đại đoàn kết dân tộc, bằng cách chia rẽ các dân tộc, các tôn giáo với nhau", "Tạo dựng các tổ chức phản động trong các dân tộc thiểu số, các tôn giáo để tiếp tục chống phá cách mạng Việt Nam", "Hướng dẫn các tôn giáo thực hiện quan hệ đối ngoại phù hợp với đường lối đối ngoại của Đảng và Nhà nước"], "answer": "Hướng dẫn các tôn giáo thực hiện quan hệ đối ngoại phù hợp với đường lối đối ngoại của Đảng và Nhà nước"}, {"id": 31, "q": "Một trong những giải pháp đấu tranh phòng, chống kẻ thủ lợi dụng vấn đề dân tộc, tôn giáo chống phá cách mạng Việt Nam?", "options": ["Làm thất bại âm mưu của các thế lực thù địch lợi dụng vấn đề tôn giáo, dân tộc, phá hoại khối đại đoàn kết toàn dân tộc", "Tăng cường xây dựng củng cố khối đại đoàn kết toàn dân, giữ vững ổn định chính trị - xã hội", "Tôn trọng, giúp đỡ lẫn nhau giữa sinh viên các dân tộc, các tôn giáo", "Tham gia và vận động nhân dân thực hiện các phong trào cách mạng ở địa phương"], "answer": "Tăng cường xây dựng củng cố khối đại đoàn kết toàn dân, giữ vững ổn định chính trị - xã hội"}, {"id": 32, "q": "Một trong những giải pháp đấu tranh phòng, chống kẻ thù lợi dụng vấn đề dân tộc, tôn giáo chống phá cách mạng Việt Nam?", "options": ["Học tập nắm vững đường lối, chính sách của Đảng và Nhà nước về công tác dân tộc, tôn giáo", "Cảnh giác cao, tích cực đấu tranh chống mọi âm mưu, thủ đoạn của mọi đối tượng lợi dụng vấn đề dân tộc, tôn giáo", "Chăm lo nâng cao đời sống vật chất, tinh thần của đồng bào các dân tộc, tôn giáo", "Đoàn kết, tôn trọng, giúp đỡ lẫn nhau giữa sinh viên các dân tộc, các tôn giáo"], "answer": "Chăm lo nâng cao đời sống vật chất, tinh thần của đồng bào các dân tộc, tôn giáo"}, {"id": 33, "q": "Trách nhiệm của sinh viên trong thực hiện chủ trương chính sách dân tộc, tôn giáo của Đảng và Nhà nước?", "options": ["Tăng cường xây dựng củng cố khối đại đoàn kết toàn dân, giữ vững ổn định chính trị - xã hội", "Cảnh giác cao, tích cực đấu tranh chống mọi âm mưu, thủ đoạn của mọi đối tượng lợi dụng vấn đề", "Chăm lo nâng cao đời sống vật chất, tỉnh thần của đồng bào các dân tộc, tôn giáo", "Giải quyết vấn đề tôn giáo phải gắn với quá trình cải tạo xã hội cũ, xây dựng xã hội mới"], "answer": "Cảnh giác cao, tích cực đấu tranh chống mọi âm mưu, thủ đoạn của mọi đối tượng lợi dụng vấn đề"}, {"id": 34, "q": "Một trong những vai trò của pháp luật trong công tác bảo vệ môi trường?", "options": ["Pháp luật xây dựng hệ thống các quy chuẩn môi trường, tiêu chuẩn môi trường để bảo vệ môi trường", "B ) Các cơ quan Nhà nước ưu đãi để phát triển kinh tế mà không quan tâm đến bảo vệ môi trường", "Khách thể của các tội phạm về môi trường là sự xâm phạm vào các quy định trong việc bảo vệ môi trường", "Mặt khách quan của các tội phạm về môi trường được thể hiện bởi những hành vi nguy hiểm cho xã hội"], "answer": "Pháp luật xây dựng hệ thống các quy chuẩn môi trường, tiêu chuẩn môi trường để bảo vệ môi trường"}, {"id": 35, "q": "Một trong những vai trò của pháp luật trong công tác bảo vệ môi trường?", "options": ["Pháp luật quy định các chế tài hình sự, kinh tế, hành chính, dân sự buộc các cá nhân, tổ chức phải thực hiện đầy đủ các yêu cầu đòi hỏi pháp luật trong việc khai thác, sử dụng các yếu tố của môi trường", "Các cơ quan Nhà nước có thẩm quyền ban hành nhiều chính sách ưu đãi để phát triển kinh tế mà không quan tâm đến bảo vệ môi trường", "Tội phạm về môi trường là hành vi nguy hiểm cho xã hội được quy định trong Bộ luật hình sự, do người có năng lực trách nhiệm hình sự", "Các tội phạm về môi trường được thực hiện dưới hình thức lỗi cố ý hoặc vô ý"], "answer": "Pháp luật quy định các chế tài hình sự, kinh tế, hành chính, dân sự buộc các cá nhân, tổ chức phải thực hiện đầy đủ các yêu cầu đòi hỏi pháp luật trong việc khai thác, sử dụng các yếu tố của môi trường"}, {"id": 36, "q": "Một trong những vai trò của pháp luật trong công tác bảo vệ môi trường?", "options": ["Pháp luật quy định chức năng, nhiệm vụ, quyền hạn của các cơ quan, tổ chức, cá nhân tham gia bảo vệ môi trường", "Các cơ quan có thẩm quyền ban hành nhiều chính sách để phát triển kinh tế mà không quan tâm đến bảo vệ môi trường", "Vi phạm pháp luật về môi trường nói chung phần lớn đều có động cơ, mục đích tư lợi cả nhân", "Hầu hết tội phạm về môi trường thực hiện hành vi phạm tội dưới hình thức lỗi cố ý"], "answer": "Pháp luật quy định chức năng, nhiệm vụ, quyền hạn của các cơ quan, tổ chức, cá nhân tham gia bảo vệ môi trường"}, {"id": 37, "q": "Tội hủy hoại nguồn lợi thủy sản được quy định tại điều mấy trong Bộ luật Hình sự năm 2015 (sửa đổi, bổ sung năm 2017)?", "options": ["Điều 242", "Điều 243", "Điều 244", "Điều 245"], "answer": "Điều 242"}, {"id": 38, "q": "Hành vi nào sau đây là vi phạm hành chính trong lĩnh vực bảo vệ môi trường?", "options": ["Hành vi vi phạm các quy định về cam kết bảo vệ môi trường, báo cáo đánh giá tác động môi trường,đề án bảo vệ môi trường", "Hành vi làm lây lan dịch bệnh truyền nhiễm nguy hiểm cho người là hành vi đưa ra hoặc cho phép đưa ra khỏi vùng có dịch bệnh động vật, thực vật", "Đảng lãnh đạo Nhà nước, các cơ quan, tổ chức và quần chúng nhân dân tham gia vào phòng, chống vi phạm pháp luật về bảo vệ môi trường", "Nắm vững các quy định của pháp luật phòng, chống vi phạm pháp luật về bảo vệ môi trường"], "answer": "Hành vi vi phạm các quy định về cam kết bảo vệ môi trường, báo cáo đánh giá tác động môi trường,đề án bảo vệ môi trường"}, {"id": 39, "q": "Hành vi nào sau đây là vi phạm hành chính trong lĩnh vực bảo vệ môi trường?", "options": ["Hành vi vi phạm các quy định về quản lý chất thải", "Hành vi khác hủy hoại rừng là ngoài hai hành vi đốt rừng và phá rừng trái phép", "Chủ thể tiến hành phòng, chống vi phạm pháp luật về bảo vệ môi trường rất đa dạng", "Tham gia tích cực trong các phong trào về bảo vệ môi trường"], "answer": "Hành vi vi phạm các quy định về quản lý chất thải"}, {"id": 40, "q": "Hành vi nào sau đây là vi phạm hành chính trong lĩnh vực bảo vệ môi trường?", "options": ["Hành vi gây ô nhiễm môi trường", "Nuôi trồng, khai thác thủy sản", "Lấy phòng ngừa kết hợp với xử lý ô nhiễm, cải thiện môi trường", "Xây dựng các phong trào bảo vệ môi trường"], "answer": "Hành vi gây ô nhiễm môi trường"}, {"id": 41, "q": "Hành vi nào sau đây là vi phạm hành chính trong lĩnh vực bảo vệ môi trường?", "options": ["Hành vi cản trở hoạt động quản lý nhà nước, kiểm tra, phối hợp thanh tra, xử phạt vi phạm hành", "Tổ chức học tập cứu và tuyên truyền giáo dục cho giảng viên và sinh viên tham gia tích cực các hoạt động bảo vệ môi trường", "Lấy phòng ngừa và ngăn chặn làm nguyên tắc chủ đạo, kết hợp với cải thiện môi trường, bảo tồn đa dạng sinh học", "Nhận thức của một số bộ phận các cơ quan quản lý nhà nước về bảo vệ môi trường chưa cao"], "answer": "Hành vi cản trở hoạt động quản lý nhà nước, kiểm tra, phối hợp thanh tra, xử phạt vi phạm hành"}, {"id": 42, "q": "Phòng chống vi phạm pháp luật về bảo vệ môi trường gồm mấy nội dung?", "options": ["5", "6", "7", "8"], "answer": "5"}, {"id": 43, "q": "Một trong những nội dung phòng chống vi phạm pháp luật về bảo vệ môi trường?", "options": ["Xây dựng các kế hoạch, biện pháp, các giải pháp chủ động hạn chế các nguyên nhân, khắc phục các điều kiện của vi phạm pháp luật về bảo vệ môi trường.", "Xây dựng, hoàn thiện cơ cấu tổ chức các cơ quan quản lý Nhà nước về môi trường, các chủ thể tham gia bảo vệ môi trường", "Tham mưu cho các cơ quan chức năng có liên quan về phương pháp, cách thức tổ chức các hoạt động phòng, chống vi phạm pháp luật về bảo vệ môi trường", "Phối hợp với các cơ quan có liên quan tiến hành các hoạt động tuyên truyền, giáo dục quần chúng"], "answer": "Xây dựng các kế hoạch, biện pháp, các giải pháp chủ động hạn chế các nguyên nhân, khắc phục các điều kiện của vi phạm pháp luật về bảo vệ môi trường."}, {"id": 44, "q": "Một trong những nội dung phòng chống vi phạm pháp luật về bảo vệ môi trường?", "options": ["Tiến hành các hoạt động điều tra, xử lý vi phạm pháp luật về bảo vệ môi trường", "Xác định rõ các nguyên nhân và điều kiện thuộc ngành nào, lĩnh vực nào cụ thể", "Các loại vi phạm pháp luật về bảo vệ môi trường xảy ra phổ biến", "Nâng cao nhận thức cho quần chúng nhân dân về ý thức trách nhiệm trong công tác bảo vệ môi trường"], "answer": "Tiến hành các hoạt động điều tra, xử lý vi phạm pháp luật về bảo vệ môi trường"}, {"id": 45, "q": "Một trong những biện pháp phòng, chống chung vi phạm pháp luật về bảo vệ môi trường?", "options": ["Biện pháp tổ chức - hành chính", "Biện pháp hình sự", "Biện pháp vận động nhân dân", "Biện pháp văn hóa - xã hội"], "answer": "Biện pháp tổ chức - hành chính"}, {"id": 46, "q": "Một trong những biện pháp phòng, chống chung vi phạm pháp luật về bảo vệ môi trường?", "options": ["Biện pháp kinh tế", "Biện pháp tài chính", "Biện pháp động viên", "Biện pháp xã hội"], "answer": "Biện pháp kinh tế"}, {"id": 47, "q": "Một trong những biện pháp phòng, chống chung vi phạm pháp luật về bảo vệ môi trường?", "options": ["Biện pháp khoa học - công nghệ", "Biện pháp công nghiệp", "Biện pháp quần chúng", "Biện pháp xã hội"], "answer": "Biện pháp khoa học - công nghệ"}, {"id": 48, "q": "Một trong những biện pháp phòng, chống chung vi phạm pháp luật về bảo vệ môi trường?", "options": ["Biện pháp tuyên truyền, giáo dục", "Biện pháp vận động", "Biện pháp vận động quần chúng", "Biện pháp xã hội"], "answer": "Biện pháp tuyên truyền, giáo dục"}, {"id": 49, "q": "Đâu là nguyên nhân, điều kiện khách quan của vi phạm pháp luật về môi trường?", "options": ["Các cơ quan Nhà nước có thẩm quyền ban hành nhiều chính sách ưu đãi để phát triển kinh tế mà không quan tâm đến bảo vệ môi trường", "Nhận thức của một số bộ phận các cơ quan quản lý nhà nước về bảo vệ môi trường chưa cao", "Các cơ quan chức năng chưa phát huy hết vai trò, trách nhiệm trong phòng, chống vi phạm pháp luật về bảo vệ môi trường", "Công tác phối hợp giữa các lực lượng trong phòng, chống tội phạm về môi trường còn chưa tốt"], "answer": "Các cơ quan Nhà nước có thẩm quyền ban hành nhiều chính sách ưu đãi để phát triển kinh tế mà không quan tâm đến bảo vệ môi trường"}, {"id": 50, "q": "Tội phạm về môi trường được quy định tại chương mấy trong Bộ luật Hình sự năm 2015( sửa đổi, bổ sung năm 2017)", "options": ["Chương 10", "Chương 19", "Chương 20", "Chương 21"], "answer": "Chương 19"}, {"id": 51, "q": "Tội hủy hoại rừng được quy định tại điều mấy trong Bộ luật Hình sự năm 2015 (sửa đổi, bổ sung năm 2017)?", "options": ["Điều 242", "Điều 243", "Điều 244", "Điều 245"], "answer": "Điều 243"}, {"id": 52, "q": "Phòng chống vi phạm pháp luật về bảo vệ môi trường có mấy đặc điểm?", "options": ["3", "4", "5", "6"], "answer": "4"}, {"id": 53, "q": "Có mấy biện pháp phòng, chống chung vì phạm pháp luật về bảo vệ môi trường?", "options": ["3", "5", "С) 6", "7"], "answer": "5"}, {"id": 54, "q": "Đâu là nguyên nhân, điều kiện khách quan của vi phạm pháp luật về môi trường?", "options": ["Công tác quản lý nhà nước về môi trường còn hạn chế", "Lực lượng trực tiếp phòng, chống vi phạm pháp luật về bảo vệ môi trường còn hạn chế", "Vi phạm pháp luật về môi trường đều có động cơ, mục đích tư lợi cá nhân", "Công tác phối hợp giữa các lực lượng trong phòng, chống tội phạm về môi trường còn chưa tôt"], "answer": "Công tác quản lý nhà nước về môi trường còn hạn chế"}, {"id": 55, "q": "Pháp luật trong công tác bảo vệ môi trường có mấy vai trò?", "options": ["3", "4", "5", "6"], "answer": "5"}, {"id": 56, "q": "Tội phạm về môi trường được quy định tại Chương 19 - Bộ luật hình sự 2015 (sửa đổi, bổ sung 2017) bao gồm mấy tội danh?", "options": ["10", "11", "12", "13"], "answer": "12"}, {"id": 57, "q": "Tội vi phạm quy định về bảo vệ động vật nguy cấp, quý, hiểm được quy định tại điều mấy trong Bộ luật Hình sự năm 2015 (sửa đổi, bổ sung năm 2017)?", "options": ["Điều 242", "Điều 243", "Điều 244", "Điều 245"], "answer": "Điều 244"}, {"id": 58, "q": "Luật Đường sắt số 06/2017/QH14 ban hành khi nào?", "options": ["Ngày 16/6/2017", "Ngày 16/4/2017", "Ngày 16/5/2017", "Ngày 06/6/2017"], "answer": "Ngày 16/6/2017"}, {"id": 59, "q": "Luật Hàng không dân dụng Việt Nam số 66/2006/QH11 ban hành khi nào?", "options": ["Ngày 29/6/2006", "Ngày 01/6/2006", "Ngày 01/7/2006", "Ngày 20/6/2006"], "answer": "Ngày 29/6/2006"}, {"id": 60, "q": "Luật Giao thông đường thuỷ nội địa số 23/2004/0H11 ban hành khi nào?", "options": ["Ngày 15/6/2004", "Ngày 16/6/2004", "Ngày 16/5/2004", "Ngày 15/6/2005"], "answer": "Ngày 15/6/2004"}, {"id": 61, "q": "Luật số 46/2014/QH13 sửa đối, bố sung một số điều của Luật giao thông đường thủy nội địa ban hành khi nào?", "options": ["Ngày 17/6/2014", "Ngày 16/4/2014", "Ngày 16/5/2014", "Ngày 16/6/2014"], "answer": "Ngày 17/6/2014"}, {"id": 62, "q": "Luật số 61/2014/QH13 sửa đổi, bổ sung một số điều của Luật hàng không dân dụng Việt Nam ban hành khi nào?", "options": ["Ngày 21/11/2014", "Ngày 16/11/2014", "Ngày 20/11/2014", "Ngày 21/12/2014"], "answer": "Ngày 21/11/2014"}, {"id": 63, "q": "Một trong các dấu hiệu cơ bản của vi phạm hành chính xảy ra trong bảo đảm trật tự, an toàn giao thông?", "options": ["Tính nguy hiểm cho xã hội", "Tính mất an toàn cho xã hội", "Tính vi phạm", "Tính phạm tội"], "answer": "Tính nguy hiểm cho xã hội"}, {"id": 64, "q": "Một trong các dấu hiệu cơ bản của vi phạm hành chính xảy ra trong bảo đảm trật tự, an toàn giao thông?", "options": ["Tính trái pháp luật về bảo đảm trật tự, an toàn giao thông", "Tính mất an toàn", "Tính sai phạm", "Tính tội phạm"], "answer": "Tính trái pháp luật về bảo đảm trật tự, an toàn giao thông"}, {"id": 65, "q": "Một trong các dấu hiệu cơ bản của vi phạm hành chính xảy ra trong bảo đảm trật tự, an toàn giao thông?", "options": ["Tính có lôi", "Tính mất an toàn cho mọi người", "Tính phạm lỗi", "Tính vi phạm hành chính"], "answer": "Tính có lôi"}, {"id": 66, "q": "Một trong những nguyên nhân, điều kiện của tình hình vi phạm pháp luật về bảo đảm trật tự, an toàn giao thông?", "options": ["Tác động tiêu cực của các yếu tố thiên nhiên, môi trường đối với người tham gia giao thông", "Quản lý giáo thông về hoạt động giao thông còn nhiều yếu kém", "Cán bộ thi pháp luật về bảo đảm trật tự, an toàn giao thông có lúc, có nơi chưa thực sự trong sạch", "Tác động tiêu cực của hạ tầng đối với người tham gia giao thông"], "answer": "Tác động tiêu cực của các yếu tố thiên nhiên, môi trường đối với người tham gia giao thông"}, {"id": 67, "q": "Một trong những nguyên nhân, điều kiện của tình hình vi phạm pháp luật về bảo đảm trật tự, an toàn giao thông?", "options": ["Các cơ quan thực thi pháp luật về bảo đảm trật tự, an toàn giao thông có lúc, có nơi chưa thực sự trong sạch", "Tương thích giữa các yếu tố cơ bản cấu thành hoạt động giao thông vận tải quốc gia", "Mặt khách quan của các tội phạm xâm phạm an toàn giao thông", "Tác động tiêu cực của hạ tầng đối với người tham gia giao thông"], "answer": "Các cơ quan thực thi pháp luật về bảo đảm trật tự, an toàn giao thông có lúc, có nơi chưa thực sự trong sạch"}, {"id": 68, "q": "Một trong những nguyên nhân, điều kiện của tình hình vi phạm pháp luật về bảo đảm trật tự, an toàn giao thông?", "options": ["Nhận thức của một bộ phận quần chúng nhân dân về bảo đảm trật tự, an toàn giao thông còn hạn chế", "Tương thích giữa các yếu tố cơ bản cấu thành hoạt động giao thông", "Vi phạm hành chính xây ra trong bảo đảm trật tự, an toàn giao thông là hành vi bị xử phạt hành", "Các tội phạm xâm phạm an toàn giao thông là những hành vi nguy hiểm cho xã hội được quy định trong Bộ Luật hình sự"], "answer": "Nhận thức của một bộ phận quần chúng nhân dân về bảo đảm trật tự, an toàn giao thông còn hạn chế"}, {"id": 69, "q": "Một trong những nội dung biện pháp phòng, chống vi phạm pháp luật về bảo đảm trật tự, an toàn giao thông?", "options": ["Phát hiện những hành vi vi phạm pháp luật về bảo đảm trật tự, an toàn giao thông do cá nhân, tổ chức thực hiện.", "Góp phần áp dụng các biện pháp xử lý tương ứng với mức độ của các hành vi vi phạm đó, góp phần bảo đảm trật tự, an toàn giao thông.", "Một nhiệm vụ của công tác bảo đảm trật tự, an toàn giao thông.", "Tuyên truyền những hành vi vi phạm pháp luật về bảo đảm trật tự, an toàn giao thông do cá nhân, tổ chức thực hiện."], "answer": "Góp phần áp dụng các biện pháp xử lý tương ứng với mức độ của các hành vi vi phạm đó, góp phần bảo đảm trật tự, an toàn giao thông."}, {"id": 70, "q": "Tổ chức nào sau đây là chủ thể trong thực hiện phòng, chống vi phạm pháp luật về bảo đảm trật tự, an toàn giao thông?", "options": ["Đảng Cộng sản Việt Nam.", "Quân đội nhân dân Việt Nam.", "Công an nhân dân Việt Nam.", "Cảnh sát nhân dân Việt Nam."], "answer": "Đảng Cộng sản Việt Nam."}, {"id": 71, "q": "Tổ chức nào sau đây là chủ thể trong thực hiện phòng, chống vi phạm pháp luật về bảo đảm trật tự, an toàn giao thông?", "options": ["Quốc hội, Hội đồng nhân dân các cấp", "Hội đồng nhân dân cấp tỉnh", "Thường vụ Quốc hội, Hội đồng nhân dân", "Quốc hội, Hội đồng nhân dân cấp huyện"], "answer": "Quốc hội, Hội đồng nhân dân các cấp"}, {"id": 72, "q": "Tổ chức nào sau đây là chủ thể trong thực hiện phòng, chống vi phạm pháp luật về bảo đảm trật tự, an toàn giao thông?", "options": ["Chính phủ và Ủy ban nhân dân các cấp.", "Chính phủ và Ủy ban nhân dân cấp tỉnh.", "Chính phủ và Ủy ban nhân dân cấp huyện.", "Chính phủ và Hội đồng nhân dân các cấp."], "answer": "Chính phủ và Ủy ban nhân dân các cấp."}, {"id": 73, "q": "Tổ chức nào sau đây là chủ thể trong thực hiện phòng, chống vi phạm pháp luật về bảo đảm trật tự, an toàn giao thông?", "options": ["Các cơ quan bảo vệ pháp luật", "Chính phủ và Ủy ban nhân dân cấp tỉnh.", "Quốc hội, Hội đồng nhân dân cấp huyện", "Chính phủ và Hội đồng nhân dân các cấp."], "answer": "Các cơ quan bảo vệ pháp luật"}, {"id": 74, "q": "Tổ chức nào sau đây là chủ thể trong thực hiện phòng, chống vi phạm pháp luật về bảo đảm trật tự an toàn giao thông?", "options": ["Các tổ chức xã hội và tổ chức quần chúng tự quản", "Các tổ chức chính trị và tổ chức quần chúng tự quản", "Các cơ quan quản lý văn hóa, giáo dục, giao thông, dịch vụ, du lịch", "Chính phủ và Hội đồng nhân dân các cấp."], "answer": "Các tổ chức xã hội và tổ chức quần chúng tự quản"}, {"id": 75, "q": "Tổ chức nào sau đây là chủ thể trong thực hiện phòng, chống vi phạm pháp luật về bảo đảm trật tự, an toàn giao thông?", "options": ["Các cơ quan quản lý kinh tế, giao thông, văn hóa, giáo dục, dịch vụ, du lịch", "Các tổ chức xã hội và tổ chức chính trị, quần chúng", "Các cơ quan quản lý giao thông vận tải, văn hóa, giáo dục, giao thông, dịch vụ, du lịch", "Chính phủ và Hội đồng nhân dân các cấp."], "answer": "Các cơ quan quản lý kinh tế, giao thông, văn hóa, giáo dục, dịch vụ, du lịch"}, {"id": 76, "q": "Tổ chức nào sau đây là chủ thể trong thực hiện phòng, chống vi phạm pháp luật về bảo đảm trật tự, an toàn giao thông?", "options": ["Công dân", "Nhân dân", "Nông dân", "Công nhân"], "answer": "Công dân"}, {"id": 77, "q": "Tội nào sau đây là thuộc nhóm tội phạm xâm hại danh dự, nhân phẩm của người khác?", "options": ["Tội làm nhục người khác", "Tội phá rối an ninh", "Tội giết người", "Tội giết hoặc vứt bỏ con mới để"], "answer": "Tội làm nhục người khác"}, {"id": 78, "q": "Tội nào sau đây là thuộc nhóm tội phạm xâm hại danh dự, nhân phẩm của người khác?", "options": ["Tội vu khống", "Tội vô ý làm chết người", "Tội xúi giục hoặc giúp người khác tự sát", "Tội bức tử"], "answer": "Tội vu khống"}, {"id": 79, "q": "Tội nào sau đây là thuộc nhóm tội phạm xâm hại danh dự, nhân phẩm của người khác?", "options": ["Tội hiếp dâm người dưới 16 tuổi", "Tội xâm phạm quyền hội họp, lập hội của công dân", "Tội phá rối an ninh", "Tội xâm phạm chỗ ở của người khác"], "answer": "Tội hiếp dâm người dưới 16 tuổi"}, {"id": 80, "q": "Tội nào sau đây là thuộc nhóm tội phạm xâm hại danh dự, nhân phẩm của người khác?", "options": ["Tội cưỡng dâm", "Tội phá rối an ninh", "Tội xâm phạm chỗ ở của người khác", "Tội xâm phạm quyền khiếu nại, tố cáo"], "answer": "Tội cưỡng dâm"}, {"id": 81, "q": "Tội nào sau đây là thuộc nhóm tội phạm xâm hại danh dự, nhân phẩm của người khác?", "options": ["Tội dâm ô đối với người dưới 16 tuôi", "Tội đe doạ giết người", "Tội bức tử", "Tội xâm phạm quyền hội họp, lập hội của công dân"], "answer": "Tội dâm ô đối với người dưới 16 tuôi"}, {"id": 82, "q": "Tội nào sau đây là thuộc nhóm tội phạm xâm hại danh dự, nhân phẩm của người khác?", "options": ["Tội mua bán người", "Tội bức tử", "Tội bắt, giữ hoặc giam người trái pháp luật", "Tội cướp tài sản"], "answer": "Tội mua bán người"}, {"id": 83, "q": "Tội nào sau đây là thuộc nhóm tội phạm xâm hại danh dự, nhân phẩm của người khác?", "options": ["Tội hành hạ người khác", "Tội đe doạ giết người", "Tội bắt, giữ hoặc giam người trái pháp luật", "Tội bắt cóc nhằm chiếm đoạt tài sản"], "answer": "Tội hành hạ người khác"}, {"id": 84, "q": "Tội hiếp dâm được Bộ luật Hình sự năm 2015 (sửa đổi, bổ sung năm 2017) quy định tại điều", "options": ["Điều 141", "Điêu 142", "Điều 143", "Điều 144"], "answer": "Điều 141"}, {"id": 85, "q": "Tội cưỡng dâm được Bộ luật Hình sự năm 2015 (sửa đổi, bổ sung năm 2017) quy định tại điều mấy?", "options": ["Điều 143", "Điều 144", "Điều 145", "Điêu 142"], "answer": "Điều 143"}, {"id": 86, "q": "Tội mua bán người được Bộ luật Hình sự năm 2015 (sửa đổi, bổ sung năm 2017) quy định tại điều mấy?", "options": ["Điều 150", "Điều 151", "Điều 152", "Điều 153"], "answer": "Điều 150"}, {"id": 87, "q": "Tội hành hạ người khác được Bộ luật Hình sự năm 2015 (sửa đổi, bổ sung năm 2017) quy định tại điều mấy?", "options": ["Điều 140", "Điều 141", "Điều 142", "Điều 143"], "answer": "Điều 140"}, {"id": 88, "q": "Tội làm nhục người khác được Bộ luật Hình sự năm 2015 (sửa đổi, bổ sung năm 2017) quy định tại điều mấy?", "options": ["Điều 155", "Điều 156", "Điều 157", "Điều 153"], "answer": "Điều 155"}, {"id": 89, "q": "Tội vu khống được Bộ luật Hình sự năm 2015 (sửa đổi, bổ sung năm 2017) quy định tại điều mấy?", "options": ["Điều 156", "Điều 157", "Điều 158", "Điều 159"], "answer": "Điều 156"}, {"id": 90, "q": "Tội lây truyền HIV cho người khác được Bộ luật Hình sự năm 2015 (sửa đổi, bổ sung năm 2017) quy định tại điều mấy?", "options": ["Điều 148", "Điều 149", "Điều 150", "Điều 151"], "answer": "Điều 148"}, {"id": 91, "q": "Một trong những nguyên nhân, điều kiện của tình trạng phạm tội danh dự, nhân phẩm", "options": ["Sự tác động của mặt trái nền kinh tế thị trường", "Những hạn chế, yếu kém trong sản xuất kinh doanh, dịch vụ", "Việc thực thi pháp luật còn chưa hiệu quả, kỷ cương phép nước chưa nghiêm", "Trình độ nghiệp vụ, pháp luật của một bộ phận cán bộ chưa đáp ứng yêu cầu thực tiễn"], "answer": "Sự tác động của mặt trái nền kinh tế thị trường"}, {"id": 92, "q": "Một trong những nguyên nhân, điều kiện của tình trạng phạm tội danh dự, nhân phẩm?", "options": ["Những thiếu sót trong giáo dục đạo đức, lối sống, nâng cao trình độ văn hóa của người dân", "Sự thiếu sót trong quản lý con người, quản lý hộ khẩu, quản lý cư trú, quản lý xuất, nhập cảnh, xuất nhập khẩu", "Nội dung, hình thức giáo dục còn nhiều bất cập, đặc biệt ở vùng sâu, vùng xa, vùng đồng bào dân tộc", "Kinh tế thị trường cũng làm xuống cấp về đạo đức, văn hóa"], "answer": "Những thiếu sót trong giáo dục đạo đức, lối sống, nâng cao trình độ văn hóa của người dân"}, {"id": 93, "q": "Một trong những nội dung hoạt động phòng chống tội phạm xâm phạm danh dự, nhân phẩm?", "options": ["Tổ chức tiến hành các hoạt động phòng ngừa tội phạm", "Nghiên cứu đổi mới các chính sách xã hội liên quan đến phòng, chống tội phạm", "Đổi mới về nội dung, hình thức, biện pháp xây dựng phong trào toàn dân bảo vệ an ninh Tổ quốc", "Hoàn thiện chế độ, chính sách đặc thù đối với các cán bộ"], "answer": "Tổ chức tiến hành các hoạt động phòng ngừa tội phạm"}, {"id": 94, "q": "Một trong những nội dung hoạt động phòng chống tội phạm xâm phạm danh dự, nhân phẩm?", "options": ["Tổ chức tiến hành các hoạt động phát hiện, điều tra, xử lý tội phạm", "Tăng cường công tác giáo dục, bồi dưỡng kiến thức quốc phòng, an ninh", "Thường xuyên cải tiến hình thức, phương pháp tuyên truyền, giáo dục nâng cao nhận thức trách nhiệm của nhân dân", "Tiếp tục xây dựng, hoàn thiện hệ thống pháp luật"], "answer": "Thường xuyên cải tiến hình thức, phương pháp tuyên truyền, giáo dục nâng cao nhận thức trách nhiệm của nhân dân"}, {"id": 95, "q": "Một trong những nội dung tổ chức tiến hành các hoạt động phòng ngừa tội phạm xâm phạm danh dự, nhân phẩm?", "options": ["Nâng cao chất lượng, hiệu quả phong trào toàn dân bảo vệ an ninh Tổ quốc", "Xây dựng, triển khai các kế hoạch chuyên đề đấu tranh với các loại tội phạm", "Mở các đợt cao điểm tấn công trấn áp tội phạm bảo vệ an toàn các sự kiện chính trị", "Nâng cao chất lượng công tác điều tra, truy tố, xét xử tội phạm"], "answer": "Nâng cao chất lượng, hiệu quả phong trào toàn dân bảo vệ an ninh Tổ quốc"}, {"id": 96, "q": "Một trong những nội dung tổ chức tiến hành các hoạt động phòng ngừa tội phạm xâm phạm danh dự, nhân phẩm?", "options": ["Quản lý, giáo dục cải tạo và tái hòa nhập cộng đồng đối với người phạm tội, vi phạm pháp luật và đối tượng có nguy cơ phạm tội", "Kịp thời lập hồ sơ đưa đối tượng vào cơ sở giáo dục, trường giáo dưỡng và cơ sở chữa bệnh bắt buộc", "Xây dựng cơ chế phối hợp chặt chẽ giữa cơ quan Điều tra với cơ quan tố tụng", "Điều tra, xét xử có hiệu quả nhất, nhằm tránh hư hao, thất thoát"], "answer": "Quản lý, giáo dục cải tạo và tái hòa nhập cộng đồng đối với người phạm tội, vi phạm pháp luật và đối tượng có nguy cơ phạm tội"}, {"id": 97, "q": "Một trong những nội dung tổ chức tiến hành các hoạt động phòng ngừa tội phạm xâm phạm danh dự, nhân phẩm?", "options": ["Tăng cường hiệu lực công tác quản lý nhà nước về trật tự xã hội", "Xây dựng, triển khai các chương trình, kế hoạch chuyên đề đấu tranh với các loại tội phạm", "Nâng cao chất lượng công tác điều tra, truy tố, xét xử tội phạm", "Điều tra xử lý các vụ án về kinh tế, chức vụ và tham nhũng"], "answer": "Tăng cường hiệu lực công tác quản lý nhà nước về trật tự xã hội"}, {"id": 98, "q": "Một trong những nội dung tổ chức tiến hành các hoạt động phòng ngừa tội phạm xâm phạm danh dự, nhân phẩm?", "options": ["Đây mạnh hoạt động phòng ngừa nghiệp vụ", "Mở các đợt cao điểm tấn công trấn áp tội phạm", "Tăng cường xét xử lưu động để răn đe tội phạm", "Điều tra, truy tố, xét xử có hiệu quả nhất, nhằm tránh hư hao, thất thoát"], "answer": "Đây mạnh hoạt động phòng ngừa nghiệp vụ"}, {"id": 99, "q": "Điều 146 - Bộ luật Hình sự năm 2015 (sửa đổi, bổ sung năm 2017) quy định nội dung gì?", "options": ["Tội hiếp dâm", "Tội dâm ô đối với người dưới 16 tuổi", "Tội cưỡng dâm", "Tội sử dụng người dưới 16 tuổi vào mục đích khiêu dâm"], "answer": "Tội dâm ô đối với người dưới 16 tuổi"}, {"id": 100, "q": "Tội cố ý truyền HIV cho người khác được Bộ luật Hình sự năm 2015 ( sửa đổi, bổ sung năm 2017) quy định tại điều mấy?", "options": ["Điều 148", "Điều 149", "Điều 150", "Điều 151"], "answer": "Điều 149"}, {"id": 101, "q": "Tội nào sau đây là thuộc nhóm tội phạm xâm hại danh dự, nhân phẩm của người khác?", "options": ["Tội đưa hoặc sử dụng trái phép thông tin mạng máy tính, mạng viễn thông", "Tội xâm nhập trái phép vào mạng máy tính, mạng viễn thông", "Tội giao cấu hoặc thực hiện hành vi quan hệ tình dục khác với người từ đủ 13 tuổi đến dưới 16 tuổi", "Tội bắt, giữ hoặc giam người trái pháp luật"], "answer": "Tội giao cấu hoặc thực hiện hành vi quan hệ tình dục khác với người từ đủ 13 tuổi đến dưới 16 tuổi"}, {"id": 102, "q": "Tội đánh tráo người dưới 01 tuổi được Bộ luật Hình sự năm 2015 (sửa đổi, bổ sung năm 2017) quy định tại điều mấy?", "options": ["Điều 150", "Điều 151", "Điêu 152", "Điều 153"], "answer": "Điêu 152"}, {"id": 103, "q": "Một trong những yêu cầu đảm bảo an toàn thông tin?", "options": ["Tính bí mật", "Tính bao quát", "Tính cơ động", "Tính nhanh chóng"], "answer": "Tính bí mật"}, {"id": 104, "q": "Một trong những yêu cầu đảm bảo an toàn thông tin?", "options": ["Tính toàn vẹn", "Tính lây lan", "Tính cơ động", "Tính an toàn"], "answer": "Tính toàn vẹn"}, {"id": 105, "q": "Một trong những yêu cầu đảm bảo an toàn thông tin?", "options": ["Tính sẵn sàng", "Tính bảo mật", "Tính kịp thời", "Tính tiện lợi"], "answer": "Tính sẵn sàng"}, {"id": 106, "q": "Hành vi nào sau đây vi phạm pháp luật trên không gian mạng?", "options": ["Spam", "Tương tác", "Chia sẻ", "Tin thiệt"], "answer": "Spam"}, {"id": 107, "q": "Nghị định nào của Chính phủ Quy định xử phạt vi phạm hành chính lĩnh vực bưu chính, viễn thông, tần số vô tuyến điện, công nghệ thông tin và giao dịch điện tử", "options": ["Nghị định 15/2020/NĐ-CP", "Nghị định 16/2020/NĐ-CP", "Nghị định 17/2020/NĐ-CP", "Nghị định 18/2020/NĐ-CP"], "answer": "Nghị định 15/2020/NĐ-CP"}, {"id": 108, "q": "Theo Điều 8 - Luật An ninh mạng năm 2018, hành vi nào sau đây bị nghiêm cấm?", "options": ["Sử dụng không gian mạng để thực hiện hành vi tổ chức, hoạt động, câu kết, xúi giục, mua chuộc, lừa gạt, lôi kéo, đào tạo, huấn luyện người chống Nhà nước Cộng hòa xã hội chủ nghĩa Việt Nam", "Phạt tiền từ 10-20 triệu đồng đối với hành vi lợi dụng mạng xã hội để cung cấp, chia sẻ thông tin giả mạo", "Mức phạt lên đến 80 triệu đồng đối với hành vi gửi hoặc phát tán thư điện từ rác", "Giả video là thực hiện bằng cách cắt ghép hình ảnh người dẫn chương trình lồng vào dẫn bản tin giả"], "answer": "Sử dụng không gian mạng để thực hiện hành vi tổ chức, hoạt động, câu kết, xúi giục, mua chuộc, lừa gạt, lôi kéo, đào tạo, huấn luyện người chống Nhà nước Cộng hòa xã hội chủ nghĩa Việt Nam"}, {"id": 109, "q": "Theo Điều 8 - Luật An ninh mạng năm 2018, hành vi nào sau đây bị nghiêm cấm?", "options": ["Sử dụng không gian mạng đê thực hiện hành vi xúi giục, lôi kéo, kích động người khác phạm tội", "Sử dụng công nghệ TTP đề tạo ra các cuộc gọi tự động với giọng robot thu sẵn", "An toàn thông tin mạng là sự bảo vệ thông tin, hệ thống thông tin trên mạng tránh bị truy nhập, sử dụng", "An toàn thông tin là an toàn kỹ thuật cho các hoạt động của các cơ sở hạ tầng thông tin"], "answer": "Sử dụng không gian mạng đê thực hiện hành vi xúi giục, lôi kéo, kích động người khác phạm tội"}, {"id": 110, "q": "Hình thức, thủ đoạn nào sau đây chiếm đoạt tài khoản mạng xã hội?", "options": ["Shishing", "Kết bạn trên mạng xã hội", "Chia sẻ bài viết", "Xin tương tác"], "answer": "Shishing"}, {"id": 111, "q": "Hình thức, thủ đoạn nào sau đây chiếm đoạt tài khoản mạng xã hội?", "options": ["Dò mật khẩu", "Đăng nhập mật khẩu", "Đăng ký theo dõi", "Tương tác bài viết"], "answer": "Dò mật khẩu"}, {"id": 112, "q": "Hình thức, thủ đoạn nào sau đây chiếm đoạt tài khoản mạng xã hội?", "options": ["Sử dụng trojan, Keylog", "Đăng tải các thông tin bán hàng", "Đăng tải thông tin", "Sử dụng youtube, facebook"], "answer": "Sử dụng trojan, Keylog"}, {"id": 113, "q": "Luật An toàn thông tin mạng ban hành khi nào?", "options": ["Ngày 19/11/2015", "Ngày 20/11/2015", "Ngày 19/12/2015", "Ngày 19/10/2015"], "answer": "Ngày 19/11/2015"}, {"id": 114, "q": "Luật An toàn thông tin mạng có hiệu lực thi hành từ khi nào?", "options": ["Ngày 01/7/2016", "Ngày 01/7/2017", "Ngày 01/01/2016", "Ngày 01/10/2016"], "answer": "Ngày 01/7/2016"}, {"id": 115, "q": "Luật An toàn thông tin mạng gồm bao nhiêu điều?", "options": ["54 điều", "55 điều", "56 điều", "57 điều"], "answer": "54 điều"}, {"id": 116, "q": "Luật An ninh mạng ban hành khi nào?", "options": ["Ngày 12/6/2018", "Ngày 12/6/2019", "Ngày 12/11/2018", "Ngày 01/6/2018"], "answer": "Ngày 12/6/2018"}, {"id": 117, "q": "Luật An ninh mạng có hiệu lực thi hành từ khi nào?", "options": ["Ngày 01/01/2019", "Ngày 01/01/2020", "Ngày 01/07/2019", "Ngày 01/7/2020"], "answer": "Ngày 01/01/2019"}, {"id": 118, "q": "Luật An ninh mạng gồm bao nhiêu chương?", "options": ["07 chương", "8 chương", "9 chương", "6 chương"], "answer": "07 chương"}, {"id": 119, "q": "Luật An ninh mạng bao gồm bao nhiêu điều?", "options": ["43 điều", "44 điều", "41 điêu", "42 điều"], "answer": "43 điều"}, {"id": 120, "q": "Một trong những biện pháp phòng, chống vi phạm pháp luật trên không gian mạng?", "options": ["Giáo dục nâng cao nhận thức về bảo vệ chủ quyền quốc gia, các lợi ích và sự nguy hại đến từ không gian mạng", "Mỗi cá nhân cần nghiên cứu, hiểu rõ ý nghĩa, giá trị, nội dung của Luật An ninh mạng, quyền lợi, nghĩa vụ, trách nhiệm", "Phòng ngừa, đấu tranh, làm thất bại hoạt động sử dụng không gian mạng xâm phạm an ninh quốc gia", "Phòng ngừa, ngăn chặn, ứng phó, khắc phục hậu quả của các đợt tấn công mạng, khủng bố mạng"], "answer": "Giáo dục nâng cao nhận thức về bảo vệ chủ quyền quốc gia, các lợi ích và sự nguy hại đến từ không gian mạng"}, {"id": 121, "q": "Một trong những biện pháp phòng, chống vi phạm pháp luật trên không gian mạng?", "options": ["Tuyên truyền, phổ biến, giáo dục các quy định của pháp luật về quản lý không gian mạng", "Luật An ninh mạng nhằm bảo vệ người dùng hợp pháp trên không gian mạng", "Tự trau dồi kỹ năng nhận diện âm mưu, thủ đoạn gây nguy cơ mất an ninh mạng", "Phòng ngừa, ngăn chặn, ứng phó, khắc phục hậu quả của các đợt tấn công mạng, khủng bố mạng"], "answer": "Tuyên truyền, phổ biến, giáo dục các quy định của pháp luật về quản lý không gian mạng"}, {"id": 122, "q": "Một trong những biện pháp phòng, chống vi phạm pháp luật trên không gian mạng?", "options": ["Bôi dưỡng kỹ năng nhận diện các âm mưu, thủ đoạn tấn công mạng và các hình thái phát sinh trên không gian mạng", "Mỗi người cần nắm chắc các thủ đoạn tấn công mạng như đánh sập các website", "Nâng cao ý thức phòng tránh, tự vệ khi tham gia mạng xã hội", "Tự trau dồi kỹ năng nhận diện âm mưu, thủ đoạn gây nguy cơ mất an ninh mạng"], "answer": "Bôi dưỡng kỹ năng nhận diện các âm mưu, thủ đoạn tấn công mạng và các hình thái phát sinh trên không gian mạng"}, {"id": 123, "q": "Một trong những biện pháp phòng, chống vi phạm pháp luật trên không gian mạng?", "options": ["Nâng cao ý thức phòng tránh, tự vệ và sử dụng biện pháp kỹ thuật để khắc phục hậu quả trong trường hợp bị tấn công trên không gian mạng", "Mỗi người cần nắm chắc các thủ đoạn tấn công mạng như đánh sập các website", "Luật An ninh mạng nhằm bảo vệ người dùng hợp pháp trên không gian mạng", "Thực hiện đúng Luật là bảo vệ chính mình, người thân và gia đình, đồng thời, góp phần bảo vệ an ninh mạng quốc gia"], "answer": "Nâng cao ý thức phòng tránh, tự vệ và sử dụng biện pháp kỹ thuật để khắc phục hậu quả trong trường hợp bị tấn công trên không gian mạng"}, {"id": 124, "q": "Nội dung của chương III - Luật An ninh mạng năm 2018 là gì?", "options": ["Phòng ngừa, xử lý hành vi xâm phạm an ninh mạng", "Phòng chống, ngăn ngừa hành vi xâm phạm an ninh mạng", "Bảo vệ an ninh mạng đối với hệ thống thông tin quan trọng về an ninh quốc gia", "Bảo đảm an toàn thông tin mạng"], "answer": "Phòng ngừa, xử lý hành vi xâm phạm an ninh mạng"}, {"id": 125, "q": "Luật An ninh mạng được ban hành năm nào?", "options": ["2017", "2018", "2019", "2020"], "answer": "2018"}, {"id": 126, "q": "Luật An toàn thông tin mạng gồm bao nhiêu chương?", "options": ["7 chương", "8 chương", "10 chương", "9 chương"], "answer": "8 chương"}, {"id": 127, "q": "Bộ luật Hình sự năm 2015, sửa đổi bổ sung năm 2017 quy định Tội phạm trong lĩnh vực công nghệ thông tin, mạng viễn thông tại chương mấy?", "options": ["Chương XX", "Chương XXI", "Chương XXI", "Chương XXIII"], "answer": "Chương XXI"}, {"id": 128, "q": "Nội dung của chương V - Luật An ninh mạng năm 2018 là gì?", "options": ["Phòng ngừa, xử lý hành vi xâm phạm an ninh mạng", "Bảo đảm hoạt động bảo vệ an ninh mạng", "Bảo vệ an ninh mạng, hệ thống thông tin quan trọng về an ninh quốc gia", "Phát triển nguồn nhân lực an toàn thông tin mạng"], "answer": "Bảo đảm hoạt động bảo vệ an ninh mạng"}, {"id": 129, "q": "Luật An toàn thông tin mạng được ban hành năm nào?", "options": ["2013", "2014", "2015", "2016"], "answer": "2015"}, {"id": 130, "q": "Nội dung của chương II - Luật An ninh mạng năm 2018 là gì?", "options": ["Quản lý nhà nước về an toàn thông tin mạng", "Phòng chống, ngăn ngừa hành vi xâm phạm an ninh mạng", "Bảo vệ an ninh mạng đối với hệ thống thông tin quan trọng về an ninh quốc gia", "Tiêu chuẩn, quy chuẩn kỹ thuật an toàn thông tin mạng"], "answer": "Bảo vệ an ninh mạng đối với hệ thống thông tin quan trọng về an ninh quốc gia"}, {"id": 131, "q": "Đâu là một trong những đặc điểm của an ninh phi truyền thống?", "options": ["Các mối đe dọa ANPTT gồm hai loại là có bạo lực và phi bạo lực", "Nhắc đến ANPTT không thể không nhắc đến mối đe dọa ANPTT", "Phạm vi tác động, ảnh hưởng mang tính xuyên quốc gia", "Mồi đe dọa ANPTT có sự gắn kết với an ninh phi truyền thống, là các yếu tố xâm hại"], "answer": "Các mối đe dọa ANPTT gồm hai loại là có bạo lực và phi bạo lực"}, {"id": 132, "q": "Đâu là bối cảnh làm nảy sinh an ninh phi truyền?", "options": ["Sự biến đổi cục diện quốc tế sau chiến tranh lạnh.", "Mồi đe dọa ANPTT đe dọa an ninh khu vực, an ninh quốc tế.", "Nhắc đến ANPTT không thể không nhắc đến mối đe dọa ANPTT", "Các mối đe dọa ANPTT đa dạng về nguồn gốc, có quá trình tích lũy tiềm tàng."], "answer": "Sự biến đổi cục diện quốc tế sau chiến tranh lạnh."}, {"id": 133, "q": "Đâu là bối cảnh làm nảy sinh an ninh phi truyền thống?", "options": ["Các quốc gia tập trung nguồn lực phát triển kinh tế - xã hội và khoa học - công nghệ phát triển.", "Các mối đe dọa ANPTT có quan hệ, tác động, ảnh hưởng lẫn nhau và với các mối đe dọa an ninh truyền thống.", "Các mối đe dọa ANPTT đa dạng về nguồn gốc, có quá trình tích lũy tiềm tàng.", "Các quốc gia tăng cường đầu tư phát triển khoa học công nghệ, hình thành các lực lượng tác chiến mới."], "answer": "Các quốc gia tập trung nguồn lực phát triển kinh tế - xã hội và khoa học - công nghệ phát triển."}, {"id": 134, "q": "Có mấy bối cảnh làm nảy sinh an ninh phi truyền thống?", "options": ["4", "5", "6", "7"], "answer": "4"}, {"id": 135, "q": "Một trong những nội dung an ninh phi truyền thống?", "options": ["Biến đổi khí hậu", "Biến đổi thời tiết", "Biến đối địa hình", "Biến đổi môi trường"], "answer": "Biến đổi khí hậu"}, {"id": 136, "q": "Một trong những nội dung an ninh phi truyền thống?", "options": ["An ninh năng lượng", "Biến đổi thời tiết", "Biến đối địa hình", "Biến đối môi trường"], "answer": "An ninh năng lượng"}, {"id": 137, "q": "Một trong những nội dung an ninh phi truyền thống?", "options": ["Vấn đề tôn giáo", "An ninh thủy điện", "An ninh tin tức", "An ninh kế toán"], "answer": "Vấn đề tôn giáo"}, {"id": 138, "q": "Một trong những nội dung an ninh phi truyền thống?", "options": ["Chủ nghĩa khủng bố", "Biến đổi thời tiết", "An ninh kế toán", "An ninh mạng"], "answer": "Chủ nghĩa khủng bố"}, {"id": 139, "q": "Đầu là một trong những giải pháp cơ bản để đấu tranh phòng chống các mỗi đe dọa an ninh phi truyền thống ở Việt Nam?", "options": ["Nâng cao nhận thức của cả hệ thống chính trị và của toàn dân về các mối đe dọa an ninh phi truyền thống.", "Nhận thức sâu sắc về ANPTT và những tác động của nó đến mọi mặt của đời sống xã hội.", "Thường xuyên học tập tốt, rèn luyện nghiêm và kịp thời đấu tranh với những quan điểm sai trái làm ảnh hưởng đến ô nhiễm môi trường khác.", "Thường xuyên học tập tốt, rèn luyện nghiêm và kịp thời đấu tranh với những quan điểm sai trái làm ảnh hưởng đến ô nhiễm môi trường khác."], "answer": "Nâng cao nhận thức của cả hệ thống chính trị và của toàn dân về các mối đe dọa an ninh phi truyền thống."}, {"id": 140, "q": "Đâu là một trong những đặc điểm của an ninh phi truyền thống?", "options": ["ANPTT thường có đặc điểm chung là bao hàm những yếu tố phi quân sự, không tồn tại trong phạm vi một quốc gia", "Các mối đe dọa ANPTT có xu hướng vận động, mở rộng, lan tràn xuyên quốc gia", "Các mối đe dọa an ninh phi truyền thống không có mối quan hệ, tác động, ảnh hưởng lẫn nhau và với các mối đe dọa an ninh", "Mối đe dọa ANPTT có sự gắn kết với an ninh phi truyền thống, là các yếu tố xâm hại hoặc đe dọa xâm hại đến ANPTT"], "answer": "Các mối đe dọa ANPTT có xu hướng vận động, mở rộng, lan tràn xuyên quốc gia"}, {"id": 141, "q": "Đâu là một trong những đặc điểm của an ninh phi truyền thống?", "options": ["ANPTT không đối lập với an ninh truyền thống mà là mở rộng nội hàm của khái niệm an ninh truyền thống", "Các mối đe dọa ANPTT đe dọa an ninh khu vực, an ninh quốc tế.", "Sự phụ thuộc và tác động qua lại lẫn nhau của các nước trên các lĩnh vực như kinh tế, tài chính, tiền tệ", "Tội phạm có tổ chức xuyên quốc gia hoạt động phức tạp, khó đấu tranh, đặc biệt là tội phạm ma túy"], "answer": "Các mối đe dọa ANPTT đe dọa an ninh khu vực, an ninh quốc tế."}, {"id": 142, "q": "Đâu là một trong những đặc điểm của an ninh phi truyền thống?", "options": ["ANPTT không đối lập với an ninh truyền thống mà là mở rộng nội hàm của khái niệm an ninh truyền thống", "Các mối đe dọa ANPTT có quan hệ, tác động, ảnh hưởng lẫn nhau và với các mối đe dọa an ninh truyền thống", "ANPTT thường có đặc điểm chung là bao hàm những yếu tố phi quân sự, không tồn tại trong phạm vi một quốc gia", "Sự biến đổi cục diện quốc tế sau chiến tranh lạnh bản chất là hướng đến quan hệ giữa các quốc gia"], "answer": "Các mối đe dọa ANPTT có quan hệ, tác động, ảnh hưởng lẫn nhau và với các mối đe dọa an ninh truyền thống"}, {"id": 143, "q": "Đâu là một trong những đặc điểm của an ninh phi truyền thống?", "options": ["Sự phụ thuộc và tác động qua lại lẫn nhau của các nước trên các lĩnh vực như kinh tế, tài chính, tiền tệ, mậu dịch, đầu tư, thông tin.", "Các mối đe dọa ANPTT đa dạng về nguồn gốc, có quá trình tích lũy tiềm tàng", "Tội phạm có tổ chức xuyên quốc gia hoạt động phức tạp, khó đấu tranh, đặc biệt là tội phạm ma túy", "Sự biến đổi cục diện quốc tế sau chiến tranh lạnh bản chất là hướng đến quan hệ giữa các quốc gia"], "answer": "Các mối đe dọa ANPTT đa dạng về nguồn gốc, có quá trình tích lũy tiềm tàng"}, {"id": 144, "q": "An ninh phi truyền thống có mấy đặc điểm?", "options": ["4", "5", "С) б", "7"], "answer": "5"}, {"id": 145, "q": "Một trong những nội dung an ninh phi truyền thống?", "options": ["Biên đối địa hình", "An ninh thông tin", "An ninh kể toán", "An ninh thủy điện"], "answer": "An ninh thông tin"}, {"id": 146, "q": "Có mấy giải pháp để đấu tranh phòng chống các mối đe dọa an ninh phi truyền thống ở Việt Nam", "options": ["4", "5", "6", "7"], "answer": "5"}, {"id": 147, "q": "Đâu là một trong những giải pháp cơ bản để đấu tranh phòng chống các mối đe dọa an ninh phi truyền thống ở Việt Nam?", "options": ["Chủ động và tích cực thúc đẩy quốc tế hóa trong phòng ngừa và ứng phó với các mối đe dọa an ninh", "Nâng cao hiệu lực, hiệu quả công tác quản lý nhà nước trong ứng phó với các mối đe dọa an ninh phi truyền thống", "Nhiều vấn đề toàn cầu bức xúc đòi hỏi các quốc gia, dân tộc và các tổ chức phối hợp giải quyết", "Chủ động xây dựng lực lượng, đầu tư nguôn lực ở từng lĩnh vực, từng địa bàn, từng vùng"], "answer": "Nâng cao hiệu lực, hiệu quả công tác quản lý nhà nước trong ứng phó với các mối đe dọa an ninh phi truyền thống"}, {"id": 148, "q": "Đâu là một trong những giải pháp cơ bản để đầu tranh phòng chống các mối đe dọa an ninh phi truyền thống ở Việt Nam?", "options": ["Chủ động và tích cực thúc đẩy hợp tác quốc tế trong phòng ngừa và ứng phó với các mối đe dọa an ninh", "Phát huy các nguồn lực xã hội, tăng cường hợp tác quốc tế trong ứng phó với các mối đe dọa an ninh phi truyền thống", "Nhiều vấn đề toàn cầu bức xúc đòi hỏi các quốc gia và các tổ chức phối hợp giải quyết", "Chủ động xây dựng lực lượng, đầu tư nguồn lực ở từng lĩnh vực, từng nội dung cụ thể"], "answer": "Phát huy các nguồn lực xã hội, tăng cường hợp tác quốc tế trong ứng phó với các mối đe dọa an ninh phi truyền thống"}, {"id": 149, "q": "Sinh viên có trách nhiệm gì trong đấu tranh phòng, chống các mối đe dọa an ninh phi truyền thống ở Việt Nam hiện nay?", "options": ["Các đối tượng phản động người Việt tăng cường các hoạt động chống phá.", "Nhận thức sâu sắc về an ninh phi truyền thống và những tác động của nó đến mọi mặt của đời sống xã hội.", "Các thế lực thù địch, đối tượng phản động thường lợi dụng các vấn đề tôn giáo để chống phá cách mạng Việt Nam", "Việt Nam hiện đang nằm trong nhóm các quốc gia thiếu nước"], "answer": "Nhận thức sâu sắc về an ninh phi truyền thống và những tác động của nó đến mọi mặt của đời sống xã hội."}, {"id": 150, "q": "Đâu là bối cảnh làm nảy sinh an ninh phi truyền thống?", "options": ["Các mối đe dọa ANPTT đa dạng về nguồn gốc, tích lũy tiềm tàng.", "Các mối đe dọa ANPTT có quan hệ, tác động, ảnh hưởng lẫn nhau và với các mối đe dọa an ninh truyền thống.", "Quá trình toàn cầu hóa diễn ra trên phạm vi rộng, tốc độ nhanh.", "Mối đe dọa ANPTT đe dọa an ninh khu vực, an ninh quốc tế."], "answer": "Quá trình toàn cầu hóa diễn ra trên phạm vi rộng, tốc độ nhanh."}, {"id": 151, "q": "An ninh phi truyền thống bao gồm mấy nội dung cơ bản?", "options": ["7", "8", "9", "10"], "answer": "9"}, {"id": 152, "q": "Một trong những nội dung an ninh phi truyền thống?", "options": ["An ninh kế toán", "Biến đổi thời tiết", "An ninh tài chính tiền tệ", "Biến đối môi trường"], "answer": "An ninh tài chính tiền tệ"}, {"id": 153, "q": "Một trong những nội dung an ninh phi truyền thống?", "options": ["Biến đổi địa hình", "Biến đổi thời tiết", "An ninh môi trường", "Biến đổi môi trường"], "answer": "An ninh môi trường"}, {"id": 154, "q": "Đâu là một trong những giải pháp cơ bản để đấu tranh phòng chống các mối đe dọa an ninh phi truyền thống ở Việt Nam?", "options": ["Chủ động và tích cực thúc đẩy hợp tác quốc tế trong phòng ngừa và ứng phó với các mối đe dọa an ninh.", "Làm tốt công tác tuyên truyền về nguy cơ, thách thức của ANPTT cho mọi người nhân dân ở địa bàn nhà trường và nơi cư trú.", "Tăng cường tiềm lực quốc gia, xây dựng nền tảng kinh tế - xã hội vững chắc, tập trung giải quyết các mâu thuẫn, xung đột xã hội.", "Chủ động xây dựng lực lượng, đầu tư nguồn lực ở từng lĩnh vực, từng địa bàn, từng nội dung cụ thể."], "answer": "Tăng cường tiềm lực quốc gia, xây dựng nền tảng kinh tế - xã hội vững chắc, tập trung giải quyết các mâu thuẫn, xung đột xã hội."}, {"id": 155, "q": "Đâu là bối cảnh làm nảy sinh an ninh phi truyền thống?", "options": ["Các mối đe dọa ANPTT có quan hệ, tác động, ảnh hưởng lẫn nhau và với các mối đe dọa an ninh truyền thống.", "Các mối đe dọa ANP TT có quan hệ, tác động, ảnh hưởng lẫn nhau", "Các mối đe dọa ANPTT đa dạng về nguồn gốc.", "Khoa học và công nghệ phát triển."], "answer": "Khoa học và công nghệ phát triển."}, {"id": 156, "q": "Nội dung an ninh phi truyền thống nào thuộc loại có bạo lực?", "options": ["Biến đổi khí hậu", "An ninh năng lượng", "An ninh tiền tệ", "Chủ nghĩa khủng bố"], "answer": "Chủ nghĩa khủng bố"}, {"id": 157, "q": "Một trong những nội dung an ninh phi truyền thống?", "options": ["An ninh thủy điện", "Biến đổi thời tiết", "An ninh đập nước", "An ninh nguồn nước"], "answer": "An ninh nguồn nước"}, {"id": 158, "q": "Một trong những nội dung an ninh phi truyền thống?", "options": ["An ninh tin tức", "Chủ nghĩa cực đoan", "An ninh mạng", "Vấn đề dân tộc"], "answer": "Vấn đề dân tộc"}, {"id": 159, "q": "Đâu là một trong những giải pháp cơ bản để đấu tranh phòng chống các mối đe dọa an ninh phi truyền thống ở Việt Nam?", "options": ["Chủ động và tích cực thúc đẩy hợp tác quốc tế trong phòng ngừa và ứng phó với các mối đe dọa an", "Làm tốt công tác tuyên truyền về nguy cơ, thách thức của ANPTT cho mọi người nhân dân ở địa bàn nhà trường và nơi cư trú.", "Phát huy truyền thống chung sức, chung lòng bảo vệ môi trường, xây dựng quê hương đất nước giàu mạnh, văn minh.", "Tăng cường công tác nghiên cứu đánh giá tình hình, dự báo kịp thời các mối đe dọa an ninh phi truyền thống"], "answer": "Tăng cường công tác nghiên cứu đánh giá tình hình, dự báo kịp thời các mối đe dọa an ninh phi truyền thống"}, {"id": 160, "q": "Thuật ngữ an ninh phi truyền thống được chính thức đề cập từ Đại hội mấy của Đảng Cộng sản Việt Nam?", "options": ["Đại hội VIII", "Đại hội IX", "Đại hội X", "Đại hội XI"], "answer": "Đại hội XI"}];
+
+const SET_SIZE = 20;
+const TOTAL_SETS = Math.ceil(QUESTIONS.length / SET_SIZE);
+const STORAGE_KEY = 'quiz_hp2_results_v1';
+
+function buildSets(){
+  const sets = [];
+  for(let i=0;i<TOTAL_SETS;i++){
+    sets.push(QUESTIONS.slice(i*SET_SIZE, i*SET_SIZE+SET_SIZE));
+  }
+  return sets;
+}
+const SETS = buildSets();
+
+/* =========================================================
+   STORAGE HELPERS
+   ========================================================= */
+function loadResults(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  }catch(e){ return {}; }
+}
+function saveResult(setIndex, score, total){
+  const results = loadResults();
+  const prev = results[setIndex];
+  results[setIndex] = {
+    score, total,
+    best: prev ? Math.max(prev.best, score) : score,
+    attempts: prev ? prev.attempts + 1 : 1
+  };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(results));
+}
+
+/* =========================================================
+   UTIL
+   ========================================================= */
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+/* =========================================================
+   STATE
+   ========================================================= */
+let currentSetIndex = null;
+let currentQuestions = [];   // array of {q, options(shuffled), answer}
+let currentIndex = 0;
+let userAnswers = [];        // array of selected option text or null
+let currentMode = 'practice'; // 'practice' | 'exam'
+let pendingSetIndex = null;
+let flagged = [];            // array of booleans, exam mode
+let examSecondsTotal = 0;
+let examSecondsLeft = 0;
+let timerInterval = null;
+let quizStartTime = null;
+let timeUp = false;
+const SECONDS_PER_QUESTION = 45; // exam mode pacing
+
+/* =========================================================
+   SCREENS
+   ========================================================= */
+const screens = {
+  hplist: document.getElementById('screen-hplist'),
+  home: document.getElementById('screen-home'),
+  quiz: document.getElementById('screen-quiz'),
+  result: document.getElementById('screen-result'),
+};
+function showScreen(name){
+  Object.values(screens).forEach(s=>s.classList.add('hidden'));
+  screens[name].classList.remove('hidden');
+  window.scrollTo(0,0);
+}
+
+/* =========================================================
+   HOME RENDER
+   ========================================================= */
+function renderHome(){
+  const results = loadResults();
+  const grid = document.getElementById('set-grid');
+  grid.innerHTML = '';
+
+  let attemptedCount = 0;
+  let totalPct = 0;
+  let bestPct = 0;
+
+  SETS.forEach((set, idx) => {
+    const r = results[idx];
+    const card = document.createElement('div');
+    card.className = 'set-card' + (r ? ' done' : '');
+    const start = idx*SET_SIZE+1;
+    const end = Math.min((idx+1)*SET_SIZE, QUESTIONS.length);
+
+    let badgeHtml = `<span class="start-label">Chưa làm</span>`;
+    let barPct = 0;
+    if(r){
+      attemptedCount++;
+      const pct = Math.round((r.best/r.total)*100);
+      totalPct += pct;
+      bestPct = Math.max(bestPct, pct);
+      barPct = pct;
+      let cls = 'low';
+      if(pct >= 80) cls = '';
+      else if(pct >= 50) cls = 'mid';
+      badgeHtml = `<span class="score-badge ${cls}">${r.best}/${r.total}</span>`;
+    }
+
+    card.innerHTML = `
+      <div class="set-num">Đề ${idx+1}</div>
+      <div class="set-range">Câu ${start}–${end}</div>
+      <div class="set-progress">${badgeHtml}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${barPct}%"></div></div>
+    `;
+    card.addEventListener('click', () => openModeModal(idx));
+    grid.appendChild(card);
+  });
+
+  document.getElementById('stat-attempted').textContent = `${attemptedCount}/${TOTAL_SETS}`;
+  document.getElementById('stat-avg').textContent = attemptedCount ? Math.round(totalPct/attemptedCount)+'%' : '—';
+  document.getElementById('stat-best').textContent = attemptedCount ? bestPct+'%' : '—';
+}
+
+/* =========================================================
+   QUIZ FLOW
+   ========================================================= */
+function openModeModal(setIndex){
+  pendingSetIndex = setIndex;
+  document.getElementById('mode-modal-title').textContent = `Đề ${setIndex+1}`;
+  document.getElementById('mode-modal').classList.remove('hidden');
+}
+function closeModeModal(){
+  document.getElementById('mode-modal').classList.add('hidden');
+}
+document.getElementById('mode-cancel').addEventListener('click', closeModeModal);
+document.getElementById('mode-modal').addEventListener('click', (e) => {
+  if(e.target.id === 'mode-modal') closeModeModal();
+});
+document.getElementById('mode-practice').addEventListener('click', () => {
+  closeModeModal();
+  startQuiz(pendingSetIndex, 'practice');
+});
+document.getElementById('mode-exam').addEventListener('click', () => {
+  closeModeModal();
+  startQuiz(pendingSetIndex, 'exam');
+});
+
+function startQuiz(setIndex, mode){
+  currentSetIndex = setIndex;
+  currentMode = mode || 'practice';
+  const rawSet = SETS[setIndex];
+  currentQuestions = rawSet.map(q => ({
+    q: q.q,
+    answer: q.answer,
+    options: shuffle(q.options)
+  }));
+  currentIndex = 0;
+  userAnswers = new Array(currentQuestions.length).fill(null);
+  flagged = new Array(currentQuestions.length).fill(false);
+  timeUp = false;
+  quizStartTime = Date.now();
+  document.getElementById('quiz-title').textContent = `Đề ${setIndex+1}` + (currentMode === 'exam' ? ' · Thi thử' : ' · Luyện tập');
+
+  const counterEl = document.getElementById('quiz-counter');
+  const timerEl = document.getElementById('timer-badge');
+  const gridBtn = document.getElementById('nav-grid-btn');
+  const flagBtn = document.getElementById('flag-btn');
+
+  stopTimer();
+  if(currentMode === 'exam'){
+    counterEl.classList.add('hidden');
+    timerEl.classList.remove('hidden');
+    gridBtn.style.display = 'flex';
+    flagBtn.classList.remove('hidden');
+    examSecondsTotal = currentQuestions.length * SECONDS_PER_QUESTION;
+    examSecondsLeft = examSecondsTotal;
+    updateTimerDisplay();
+    timerInterval = setInterval(tickTimer, 1000);
+  } else {
+    counterEl.classList.remove('hidden');
+    timerEl.classList.add('hidden');
+    gridBtn.style.display = 'none';
+    flagBtn.classList.add('hidden');
+  }
+
+  showScreen('quiz');
+  renderDots();
+  renderQuestion();
+}
+
+function stopTimer(){
+  if(timerInterval){ clearInterval(timerInterval); timerInterval = null; }
+}
+
+function updateTimerDisplay(){
+  const timerEl = document.getElementById('timer-badge');
+  const m = Math.floor(examSecondsLeft/60);
+  const s = examSecondsLeft%60;
+  timerEl.textContent = `${m}:${String(s).padStart(2,'0')}`;
+  timerEl.classList.toggle('low-time', examSecondsLeft <= 60);
+}
+
+function tickTimer(){
+  examSecondsLeft--;
+  if(examSecondsLeft <= 0){
+    examSecondsLeft = 0;
+    updateTimerDisplay();
+    stopTimer();
+    timeUp = true;
+    finishQuiz();
+    return;
+  }
+  updateTimerDisplay();
+}
+
+function renderDots(){
+  const row = document.getElementById('dot-row');
+  row.innerHTML = '';
+  currentQuestions.forEach((_, i) => {
+    const dot = document.createElement('div');
+    let cls = 'dot';
+    if(i === currentIndex) cls += ' current';
+    const ans = userAnswers[i];
+    if(ans !== null){
+      if(currentMode === 'exam'){
+        cls += ' answered-neutral';
+      } else {
+        cls += (ans === currentQuestions[i].answer) ? ' answered-correct' : ' answered-wrong';
+      }
+    }
+    if(currentMode === 'exam' && flagged[i]) cls += ' dot-flagged';
+    dot.className = cls;
+    row.appendChild(dot);
+  });
+}
+
+function renderQuestion(){
+  const item = currentQuestions[currentIndex];
+  document.getElementById('quiz-counter').textContent = `${currentIndex+1}/${currentQuestions.length}`;
+  document.getElementById('progress-fill').style.width = `${((currentIndex)/currentQuestions.length)*100}%`;
+  document.getElementById('q-num-label').textContent = `CÂU ${currentIndex+1}`;
+  document.getElementById('q-text').textContent = item.q;
+
+  const container = document.getElementById('options-container');
+  container.innerHTML = '';
+  const letters = ['A','B','C','D'];
+  const alreadyAnswered = userAnswers[currentIndex] !== null;
+  const isExam = currentMode === 'exam';
+
+  item.options.forEach((optText, i) => {
+    const opt = document.createElement('div');
+    opt.className = 'option';
+    opt.innerHTML = `
+      <div class="letter">${letters[i]}</div>
+      <div class="otext">${escapeHtml(optText)}</div>
+      <div class="mark"></div>
+    `;
+    if(isExam){
+      // exam mode: never reveal correctness, allow changing selection freely
+      if(optText === userAnswers[currentIndex]){
+        opt.classList.add('selected-pending');
+      }
+      opt.addEventListener('click', () => selectAnswer(optText));
+    } else if(alreadyAnswered){
+      applyRevealStyles(opt, optText, item, userAnswers[currentIndex]);
+    } else {
+      opt.addEventListener('click', () => selectAnswer(optText));
+    }
+    container.appendChild(opt);
+  });
+
+  const banner = document.getElementById('feedback-banner');
+  if(!isExam && alreadyAnswered){
+    showBanner(userAnswers[currentIndex] === item.answer);
+  } else {
+    banner.classList.add('hidden');
+  }
+
+  document.getElementById('btn-prev').disabled = currentIndex === 0;
+  const nextBtn = document.getElementById('btn-next');
+  nextBtn.disabled = isExam ? false : !alreadyAnswered;
+  nextBtn.textContent = currentIndex === currentQuestions.length-1 ? 'Nộp bài' : 'Tiếp theo';
+
+  if(isExam){
+    const flagBtn = document.getElementById('flag-btn');
+    const isFlagged = flagged[currentIndex];
+    flagBtn.classList.toggle('flagged', isFlagged);
+    document.getElementById('flag-btn-label').textContent = isFlagged ? 'Đã đánh dấu' : 'Đánh dấu';
+  }
+
+  renderDots();
+}
+
+function toggleFlag(){
+  flagged[currentIndex] = !flagged[currentIndex];
+  renderQuestion();
+}
+document.getElementById('flag-btn').addEventListener('click', toggleFlag);
+
+function applyRevealStyles(opt, optText, item, selected){
+  const mark = opt.querySelector('.mark');
+  if(optText === item.answer){
+    opt.classList.add('correct-reveal');
+    mark.innerHTML = checkIcon();
+  } else if(optText === selected){
+    opt.classList.add('wrong-reveal');
+    mark.innerHTML = xIcon();
+  } else {
+    opt.classList.add('dim');
+  }
+}
+
+function checkIcon(){
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--green)"><path d="M20 6L9 17l-5-5"/></svg>`;
+}
+function xIcon(){
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--red)"><path d="M18 6L6 18M6 6l12 12"/></svg>`;
+}
+
+function showBanner(isCorrect){
+  const banner = document.getElementById('feedback-banner');
+  banner.classList.remove('hidden','correct','wrong');
+  banner.classList.add(isCorrect ? 'correct' : 'wrong');
+  banner.textContent = isCorrect ? '✓ Chính xác!' : '✗ Chưa đúng — xem đáp án đúng ở trên';
+}
+
+function selectAnswer(optText){
+  userAnswers[currentIndex] = optText;
+  renderQuestion();
+}
+
+document.getElementById('btn-prev').addEventListener('click', () => {
+  if(currentIndex > 0){
+    currentIndex--;
+    renderQuestion();
+  }
+});
+
+document.getElementById('btn-next').addEventListener('click', () => {
+  if(currentIndex < currentQuestions.length - 1){
+    currentIndex++;
+    renderQuestion();
+  } else if(currentMode === 'exam'){
+    attemptSubmit();
+  } else {
+    finishQuiz();
+  }
+});
+
+/* ---------- Question navigator (exam mode) ---------- */
+function openNavigator(){
+  const grid = document.getElementById('nav-grid');
+  grid.innerHTML = '';
+  currentQuestions.forEach((_, i) => {
+    const cell = document.createElement('div');
+    let cls = 'nav-cell';
+    if(i === currentIndex) cls += ' is-current';
+    if(userAnswers[i] !== null) cls += ' is-answered';
+    if(flagged[i]) cls += ' is-flagged';
+    cell.className = cls;
+    cell.textContent = i+1;
+    cell.addEventListener('click', () => {
+      currentIndex = i;
+      closeNavigator();
+      renderQuestion();
+    });
+    grid.appendChild(cell);
+  });
+  document.getElementById('navigator-modal').classList.remove('hidden');
+}
+function closeNavigator(){
+  document.getElementById('navigator-modal').classList.add('hidden');
+}
+document.getElementById('nav-grid-btn').addEventListener('click', openNavigator);
+document.getElementById('nav-modal-close').addEventListener('click', closeNavigator);
+document.getElementById('navigator-modal').addEventListener('click', (e) => {
+  if(e.target.id === 'navigator-modal') closeNavigator();
+});
+document.getElementById('nav-modal-submit').addEventListener('click', () => {
+  closeNavigator();
+  attemptSubmit();
+});
+
+/* ---------- Submit confirm (exam mode) ---------- */
+function attemptSubmit(){
+  const unanswered = userAnswers.filter(a => a === null).length;
+  if(unanswered > 0){
+    document.getElementById('submit-modal-body').textContent =
+      `Bạn còn ${unanswered} câu chưa làm. Vẫn muốn nộp bài?`;
+    document.getElementById('submit-modal').classList.remove('hidden');
+  } else {
+    finishQuiz();
+  }
+}
+document.getElementById('submit-modal-cancel').addEventListener('click', () => {
+  document.getElementById('submit-modal').classList.add('hidden');
+});
+document.getElementById('submit-modal').addEventListener('click', (e) => {
+  if(e.target.id === 'submit-modal') document.getElementById('submit-modal').classList.add('hidden');
+});
+document.getElementById('submit-modal-confirm').addEventListener('click', () => {
+  document.getElementById('submit-modal').classList.add('hidden');
+  finishQuiz();
+});
+
+function openConfirmModal(){
+  document.getElementById('confirm-modal').classList.remove('hidden');
+}
+function closeConfirmModal(){
+  document.getElementById('confirm-modal').classList.add('hidden');
+}
+
+document.getElementById('quiz-back').addEventListener('click', openConfirmModal);
+document.getElementById('modal-cancel').addEventListener('click', closeConfirmModal);
+document.getElementById('confirm-modal').addEventListener('click', (e) => {
+  if(e.target.id === 'confirm-modal') closeConfirmModal();
+});
+document.getElementById('modal-confirm').addEventListener('click', () => {
+  stopTimer();
+  closeConfirmModal();
+  showScreen('home');
+  renderHome();
+});
+
+/* =========================================================
+   RESULT
+   ========================================================= */
+function finishQuiz(){
+  stopTimer();
+  const total = currentQuestions.length;
+  const score = userAnswers.reduce((acc, ans, i) => acc + (ans === currentQuestions[i].answer ? 1 : 0), 0);
+  saveResult(currentSetIndex, score, total);
+  renderResult(score, total);
+  showScreen('result');
+}
+
+function renderResult(score, total){
+  document.getElementById('result-set-label').textContent = `Đề ${currentSetIndex+1}` + (currentMode === 'exam' ? ' · Thi thử' : ' · Luyện tập');
+  document.getElementById('score-num').textContent = score;
+  document.getElementById('score-den').textContent = `/ ${total}`;
+
+  const pct = score/total;
+  const circumference = 2 * Math.PI * 66;
+  const ring = document.getElementById('ring-progress');
+  ring.style.strokeDasharray = `${circumference}`;
+  ring.style.strokeDashoffset = `${circumference * (1-pct)}`;
+
+  let verdict, sub;
+  if(pct === 1){ verdict = 'Xuất sắc! 🎉'; sub = 'Bạn trả lời đúng tất cả các câu.'; }
+  else if(pct >= 0.8){ verdict = 'Rất tốt!'; sub = 'Chỉ còn vài câu cần ôn lại.'; }
+  else if(pct >= 0.5){ verdict = 'Khá ổn'; sub = 'Xem lại các câu sai bên dưới nhé.'; }
+  else { verdict = 'Cần ôn thêm'; sub = 'Đừng nản — làm lại để cải thiện điểm số.'; }
+
+  if(currentMode === 'exam'){
+    const elapsed = Math.round((Date.now() - quizStartTime)/1000);
+    const em = Math.floor(elapsed/60), es = elapsed%60;
+    const timeStr = `${em}:${String(es).padStart(2,'0')}`;
+    sub += ` · Thời gian: ${timeStr}`;
+    if(timeUp) sub += ' · Đã hết giờ, bài được nộp tự động';
+  }
+  document.getElementById('result-verdict').textContent = verdict;
+  document.getElementById('result-subverdict').textContent = sub;
+
+  const reviewContainer = document.getElementById('review-container');
+  reviewContainer.innerHTML = '';
+  currentQuestions.forEach((item, i) => {
+    const isCorrect = userAnswers[i] === item.answer;
+    const div = document.createElement('div');
+    div.className = 'review-item';
+    div.innerHTML = `
+      <div class="r-top">
+        <div class="r-badge ${isCorrect?'ok':'bad'}">${isCorrect ? checkIcon() : xIcon()}</div>
+        <div class="r-q">Câu ${i+1}. ${escapeHtml(item.q)}</div>
+      </div>
+      <div class="r-answer ${isCorrect?'ok-text':'bad-text'}">
+        <span class="lbl">Bạn chọn:</span> ${escapeHtml(userAnswers[i] ?? '(bỏ trống)')}
+      </div>
+      ${!isCorrect ? `<div class="r-correct-line"><span class="lbl" style="color:var(--text-faint)">Đáp án đúng:</span> ${escapeHtml(item.answer)}</div>` : ''}
+    `;
+    reviewContainer.appendChild(div);
+  });
+}
+
+document.getElementById('btn-retry').addEventListener('click', () => startQuiz(currentSetIndex, currentMode));
+document.getElementById('btn-choose-other').addEventListener('click', () => { showScreen('home'); renderHome(); });
+document.getElementById('result-home-btn').addEventListener('click', () => { showScreen('home'); renderHome(); });
+
+document.getElementById('hp-card-2').addEventListener('click', () => { showScreen('home'); renderHome(); });
+document.getElementById('home-back').addEventListener('click', () => showScreen('hplist'));
+
+/* =========================================================
+   INIT
+   ========================================================= */
+renderHome();
+</script>
 </body>
 </html>
