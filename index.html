@@ -678,8 +678,15 @@ function escapeHtml(str){
    ========================================================= */
 let currentSetIndex = null;
 let currentQuestions = [];   // array of {q, options(shuffled), answer}
-let currentIndex = 0;
-let userAnswers = [];        // array of selected option text or null
+let currentIndex = 0;        // pointer into qOrder (the play queue)
+let qOrder = [];             // slot -> original question index (grows when a question is repeated)
+let slotAnswers = [];        // slot -> selected option text or null
+let slotIsRepeat = [];       // slot -> is this a repeated appearance of the question?
+let firstAnswers = [];       // original index -> answer given on first attempt (used for scoring)
+let mastered = [];           // original index -> answered correctly at least once (practice mode)
+let appearCount = [];        // original index -> how many times shown (practice mode, caps repeats)
+const MAX_APPEARANCES = 4;   // safety cap so a missed question doesn't repeat forever
+const REPEAT_GAP = 3;        // show a missed question again a few cards later, not immediately
 let currentMode = 'practice'; // 'practice' | 'exam'
 let pendingSetIndex = null;
 let flagged = [];            // array of booleans, exam mode
@@ -787,7 +794,12 @@ function startQuiz(setIndex, mode){
     options: shuffle(q.options)
   }));
   currentIndex = 0;
-  userAnswers = new Array(currentQuestions.length).fill(null);
+  qOrder = currentQuestions.map((_, i) => i);
+  slotAnswers = new Array(qOrder.length).fill(null);
+  slotIsRepeat = new Array(qOrder.length).fill(false);
+  firstAnswers = new Array(currentQuestions.length).fill(null);
+  mastered = new Array(currentQuestions.length).fill(false);
+  appearCount = new Array(currentQuestions.length).fill(0);
   flagged = new Array(currentQuestions.length).fill(false);
   timeUp = false;
   quizStartTime = Date.now();
@@ -848,36 +860,51 @@ function tickTimer(){
 function renderDots(){
   const row = document.getElementById('dot-row');
   row.innerHTML = '';
+  const curQIdx = qOrder[currentIndex];
   currentQuestions.forEach((_, i) => {
     const dot = document.createElement('div');
     let cls = 'dot';
-    if(i === currentIndex) cls += ' current';
-    const ans = userAnswers[i];
-    if(ans !== null){
-      if(currentMode === 'exam'){
-        cls += ' answered-neutral';
-      } else {
-        cls += (ans === currentQuestions[i].answer) ? ' answered-correct' : ' answered-wrong';
-      }
+    if(i === curQIdx) cls += ' current';
+    if(currentMode === 'exam'){
+      if(firstAnswers[i] !== null) cls += ' answered-neutral';
+      if(flagged[i]) cls += ' dot-flagged';
+    } else {
+      if(mastered[i]) cls += ' answered-correct';
+      else if(firstAnswers[i] !== null) cls += ' answered-wrong';
     }
-    if(currentMode === 'exam' && flagged[i]) cls += ' dot-flagged';
     dot.className = cls;
     row.appendChild(dot);
   });
 }
 
+function scheduleRepeat(qIdx){
+  if(appearCount[qIdx] >= MAX_APPEARANCES) return; // stop repeating; question stays marked as needing review
+  const insertPos = Math.min(currentIndex + 1 + REPEAT_GAP, qOrder.length);
+  qOrder.splice(insertPos, 0, qIdx);
+  slotAnswers.splice(insertPos, 0, null);
+  slotIsRepeat.splice(insertPos, 0, true);
+}
+
 function renderQuestion(){
-  const item = currentQuestions[currentIndex];
-  document.getElementById('quiz-counter').textContent = `${currentIndex+1}/${currentQuestions.length}`;
-  document.getElementById('progress-fill').style.width = `${((currentIndex)/currentQuestions.length)*100}%`;
-  document.getElementById('q-num-label').textContent = `CÂU ${currentIndex+1}`;
+  const qIdx = qOrder[currentIndex];
+  const item = currentQuestions[qIdx];
+  const isExam = currentMode === 'exam';
+
+  if(isExam){
+    document.getElementById('quiz-counter').textContent = `${currentIndex+1}/${currentQuestions.length}`;
+    document.getElementById('progress-fill').style.width = `${((currentIndex)/currentQuestions.length)*100}%`;
+  } else {
+    const masteredCount = mastered.filter(Boolean).length;
+    document.getElementById('quiz-counter').textContent = `${masteredCount}/${currentQuestions.length} đã thuộc`;
+    document.getElementById('progress-fill').style.width = `${(masteredCount/currentQuestions.length)*100}%`;
+  }
+  document.getElementById('q-num-label').textContent = `CÂU ${qIdx+1}` + (!isExam && slotIsRepeat[currentIndex] ? ' · Ôn lại' : '');
   document.getElementById('q-text').textContent = item.q;
 
   const container = document.getElementById('options-container');
   container.innerHTML = '';
   const letters = ['A','B','C','D'];
-  const alreadyAnswered = userAnswers[currentIndex] !== null;
-  const isExam = currentMode === 'exam';
+  const alreadyAnswered = slotAnswers[currentIndex] !== null;
 
   item.options.forEach((optText, i) => {
     const opt = document.createElement('div');
@@ -889,12 +916,12 @@ function renderQuestion(){
     `;
     if(isExam){
       // exam mode: never reveal correctness, allow changing selection freely
-      if(optText === userAnswers[currentIndex]){
+      if(optText === slotAnswers[currentIndex]){
         opt.classList.add('selected-pending');
       }
       opt.addEventListener('click', () => selectAnswer(optText));
     } else if(alreadyAnswered){
-      applyRevealStyles(opt, optText, item, userAnswers[currentIndex]);
+      applyRevealStyles(opt, optText, item, slotAnswers[currentIndex]);
     } else {
       opt.addEventListener('click', () => selectAnswer(optText));
     }
@@ -903,7 +930,9 @@ function renderQuestion(){
 
   const banner = document.getElementById('feedback-banner');
   if(!isExam && alreadyAnswered){
-    showBanner(userAnswers[currentIndex] === item.answer);
+    const isCorrect = slotAnswers[currentIndex] === item.answer;
+    const willRepeat = !isCorrect && appearCount[qIdx] < MAX_APPEARANCES;
+    showBanner(isCorrect, willRepeat);
   } else {
     banner.classList.add('hidden');
   }
@@ -911,7 +940,7 @@ function renderQuestion(){
   document.getElementById('btn-prev').disabled = currentIndex === 0;
   const nextBtn = document.getElementById('btn-next');
   nextBtn.disabled = isExam ? false : !alreadyAnswered;
-  nextBtn.textContent = currentIndex === currentQuestions.length-1 ? 'Nộp bài' : 'Tiếp theo';
+  nextBtn.textContent = currentIndex === qOrder.length-1 ? 'Nộp bài' : 'Tiếp theo';
 
   if(isExam){
     const flagBtn = document.getElementById('flag-btn');
@@ -949,15 +978,24 @@ function xIcon(){
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--red)"><path d="M18 6L6 18M6 6l12 12"/></svg>`;
 }
 
-function showBanner(isCorrect){
+function showBanner(isCorrect, willRepeat){
   const banner = document.getElementById('feedback-banner');
   banner.classList.remove('hidden','correct','wrong');
   banner.classList.add(isCorrect ? 'correct' : 'wrong');
-  banner.textContent = isCorrect ? '✓ Chính xác!' : '✗ Chưa đúng — xem đáp án đúng ở trên';
+  banner.textContent = isCorrect ? '✓ Chính xác!' : (willRepeat ? '✗ Chưa đúng — câu này sẽ xuất hiện lại để bạn ôn' : '✗ Chưa đúng — xem đáp án đúng ở trên');
 }
 
 function selectAnswer(optText){
-  userAnswers[currentIndex] = optText;
+  const qIdx = qOrder[currentIndex];
+  slotAnswers[currentIndex] = optText;
+  if(firstAnswers[qIdx] === null) firstAnswers[qIdx] = optText;
+  appearCount[qIdx]++;
+  if(optText === currentQuestions[qIdx].answer){
+    mastered[qIdx] = true;
+  } else {
+    mastered[qIdx] = false;
+    if(currentMode === 'practice') scheduleRepeat(qIdx);
+  }
   renderQuestion();
 }
 
@@ -969,7 +1007,7 @@ document.getElementById('btn-prev').addEventListener('click', () => {
 });
 
 document.getElementById('btn-next').addEventListener('click', () => {
-  if(currentIndex < currentQuestions.length - 1){
+  if(currentIndex < qOrder.length - 1){
     currentIndex++;
     renderQuestion();
   } else if(currentMode === 'exam'){
@@ -987,7 +1025,7 @@ function openNavigator(){
     const cell = document.createElement('div');
     let cls = 'nav-cell';
     if(i === currentIndex) cls += ' is-current';
-    if(userAnswers[i] !== null) cls += ' is-answered';
+    if(firstAnswers[i] !== null) cls += ' is-answered';
     if(flagged[i]) cls += ' is-flagged';
     cell.className = cls;
     cell.textContent = i+1;
@@ -1015,7 +1053,7 @@ document.getElementById('nav-modal-submit').addEventListener('click', () => {
 
 /* ---------- Submit confirm (exam mode) ---------- */
 function attemptSubmit(){
-  const unanswered = userAnswers.filter(a => a === null).length;
+  const unanswered = firstAnswers.filter(a => a === null).length;
   if(unanswered > 0){
     document.getElementById('submit-modal-body').textContent =
       `Bạn còn ${unanswered} câu chưa làm. Vẫn muốn nộp bài?`;
@@ -1060,7 +1098,7 @@ document.getElementById('modal-confirm').addEventListener('click', () => {
 function finishQuiz(){
   stopTimer();
   const total = currentQuestions.length;
-  const score = userAnswers.reduce((acc, ans, i) => acc + (ans === currentQuestions[i].answer ? 1 : 0), 0);
+  const score = firstAnswers.reduce((acc, ans, i) => acc + (ans === currentQuestions[i].answer ? 1 : 0), 0);
   saveResult(currentSetIndex, score, total);
   renderResult(score, total);
   showScreen('result');
@@ -1096,7 +1134,7 @@ function renderResult(score, total){
   const reviewContainer = document.getElementById('review-container');
   reviewContainer.innerHTML = '';
   currentQuestions.forEach((item, i) => {
-    const isCorrect = userAnswers[i] === item.answer;
+    const isCorrect = firstAnswers[i] === item.answer;
     const div = document.createElement('div');
     div.className = 'review-item';
     div.innerHTML = `
@@ -1105,7 +1143,7 @@ function renderResult(score, total){
         <div class="r-q">Câu ${i+1}. ${escapeHtml(item.q)}</div>
       </div>
       <div class="r-answer ${isCorrect?'ok-text':'bad-text'}">
-        <span class="lbl">Bạn chọn:</span> ${escapeHtml(userAnswers[i] ?? '(bỏ trống)')}
+        <span class="lbl">Bạn chọn:</span> ${escapeHtml(firstAnswers[i] ?? '(bỏ trống)')}
       </div>
       ${!isCorrect ? `<div class="r-correct-line"><span class="lbl" style="color:var(--text-faint)">Đáp án đúng:</span> ${escapeHtml(item.answer)}</div>` : ''}
     `;
