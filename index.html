@@ -809,6 +809,7 @@ function startQuiz(setIndex, mode){
   const timerEl = document.getElementById('timer-badge');
   const gridBtn = document.getElementById('nav-grid-btn');
   const flagBtn = document.getElementById('flag-btn');
+  const prevBtn = document.getElementById('btn-prev');
 
   stopTimer();
   if(currentMode === 'exam'){
@@ -816,6 +817,7 @@ function startQuiz(setIndex, mode){
     timerEl.classList.remove('hidden');
     gridBtn.style.display = 'flex';
     flagBtn.classList.remove('hidden');
+    prevBtn.classList.remove('hidden');
     examSecondsTotal = currentQuestions.length * SECONDS_PER_QUESTION;
     examSecondsLeft = examSecondsTotal;
     updateTimerDisplay();
@@ -825,6 +827,7 @@ function startQuiz(setIndex, mode){
     timerEl.classList.add('hidden');
     gridBtn.style.display = 'none';
     flagBtn.classList.add('hidden');
+    prevBtn.classList.add('hidden');
   }
 
   showScreen('quiz');
@@ -937,10 +940,14 @@ function renderQuestion(){
     banner.classList.add('hidden');
   }
 
-  document.getElementById('btn-prev').disabled = currentIndex === 0;
   const nextBtn = document.getElementById('btn-next');
   nextBtn.disabled = isExam ? false : !alreadyAnswered;
-  nextBtn.textContent = currentIndex === qOrder.length-1 ? 'Nộp bài' : 'Tiếp theo';
+  if(isExam){
+    document.getElementById('btn-prev').disabled = currentIndex === 0;
+    nextBtn.textContent = currentIndex === qOrder.length-1 ? 'Nộp bài' : 'Tiếp theo';
+  } else {
+    nextBtn.textContent = currentIndex === qOrder.length-1 ? 'Hoàn thành' : 'Tiếp tục';
+  }
 
   if(isExam){
     const flagBtn = document.getElementById('flag-btn');
