@@ -665,13 +665,14 @@ function loadResults(){
     return raw ? JSON.parse(raw) : {};
   }catch(e){ return {}; }
 }
-function saveResult(setIndex, score, total){
+function saveResult(setIndex, score, total, wrongIndices){
   const results = loadResults();
   const prev = results[setIndex];
   results[setIndex] = {
     score, total,
     best: prev ? Math.max(prev.best, score) : score,
-    attempts: prev ? prev.attempts + 1 : 1
+    attempts: prev ? prev.attempts + 1 : 1,
+    wrongIndices: wrongIndices || []
   };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(results));
 }
@@ -702,6 +703,7 @@ let currentIndex = 0;        // pointer into qOrder (the play queue)
 let qOrder = [];             // slot -> original question index (grows when a question is repeated)
 let slotAnswers = [];        // slot -> selected option text or null
 let slotIsRepeat = [];       // slot -> is this a repeated appearance of the question?
+let slotIsPriority = [];     // slot -> shown early because it was wrong on the previous practice attempt
 let firstAnswers = [];       // original index -> answer given on first attempt (used for scoring)
 let mastered = [];           // original index -> answered correctly at least once (practice mode)
 let appearCount = [];        // original index -> how many times shown (practice mode, caps repeats)
@@ -815,6 +817,17 @@ function startQuiz(setIndex, mode){
   }));
   currentIndex = 0;
   qOrder = currentQuestions.map((_, i) => i);
+  slotIsPriority = new Array(qOrder.length).fill(false);
+  if(currentMode === 'practice'){
+    const prevResult = loadResults()[setIndex];
+    const wrongSet = new Set((prevResult && prevResult.wrongIndices) || []);
+    if(wrongSet.size > 0){
+      const prioritized = qOrder.filter(i => wrongSet.has(i));
+      const rest = qOrder.filter(i => !wrongSet.has(i));
+      qOrder = [...prioritized, ...rest];
+      for(let p = 0; p < prioritized.length; p++) slotIsPriority[p] = true;
+    }
+  }
   slotAnswers = new Array(qOrder.length).fill(null);
   slotIsRepeat = new Array(qOrder.length).fill(false);
   firstAnswers = new Array(currentQuestions.length).fill(null);
@@ -906,6 +919,7 @@ function scheduleRepeat(qIdx){
   qOrder.splice(insertPos, 0, qIdx);
   slotAnswers.splice(insertPos, 0, null);
   slotIsRepeat.splice(insertPos, 0, true);
+  slotIsPriority.splice(insertPos, 0, false);
 }
 
 function renderQuestion(){
@@ -921,7 +935,10 @@ function renderQuestion(){
     document.getElementById('quiz-counter').textContent = `${masteredCount}/${currentQuestions.length} đã thuộc`;
     document.getElementById('progress-fill').style.width = `${(masteredCount/currentQuestions.length)*100}%`;
   }
-  document.getElementById('q-num-label').textContent = `CÂU ${qIdx+1}` + (!isExam && slotIsRepeat[currentIndex] ? ' · Ôn lại' : '');
+  let qTag = '';
+  if(!isExam && slotIsRepeat[currentIndex]) qTag = ' · Ôn lại';
+  else if(!isExam && slotIsPriority[currentIndex]) qTag = ' · Ưu tiên (sai lần trước)';
+  document.getElementById('q-num-label').textContent = `CÂU ${qIdx+1}` + qTag;
   document.getElementById('q-text').textContent = item.q;
 
   const container = document.getElementById('options-container');
@@ -1126,7 +1143,9 @@ function finishQuiz(){
   stopTimer();
   const total = currentQuestions.length;
   const score = firstAnswers.reduce((acc, ans, i) => acc + (ans === currentQuestions[i].answer ? 1 : 0), 0);
-  saveResult(currentSetIndex, score, total);
+  const wrongIndices = [];
+  firstAnswers.forEach((ans, i) => { if(ans !== currentQuestions[i].answer) wrongIndices.push(i); });
+  saveResult(currentSetIndex, score, total, wrongIndices);
   renderResult(score, total);
   showScreen('result');
 }
