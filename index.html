@@ -296,9 +296,22 @@
   }
 
   .review-list{ padding: 8px 16px 0; }
+  .review-header-row{
+    display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+    padding: 18px 4px 10px;
+  }
   .review-header{
     font-size:13px; font-weight:700; color: var(--text-dim); text-transform:uppercase; letter-spacing:0.06em;
-    padding: 18px 4px 10px;
+  }
+  .review-filters{ display:flex; gap:6px; }
+  .filter-chip{
+    font-size:12px; font-weight:700; color: var(--text-dim);
+    background: var(--bg-elev-2); border:1px solid var(--border); border-radius:20px;
+    padding: 5px 11px; cursor:pointer;
+  }
+  .filter-chip.active{ background: var(--indigo); border-color: var(--indigo); color:#fff; }
+  .review-empty{
+    text-align:center; color: var(--text-faint); font-size:13.5px; padding: 24px 4px;
   }
   .review-item{
     background: var(--bg-elev); border:1px solid var(--border); border-radius: var(--radius-sm);
@@ -522,7 +535,14 @@
     </div>
 
     <div class="review-list">
-      <div class="review-header">Xem lại chi tiết</div>
+      <div class="review-header-row">
+        <div class="review-header">Xem lại chi tiết</div>
+        <div class="review-filters" id="review-filters">
+          <button class="filter-chip active" data-filter="all">Tất cả</button>
+          <button class="filter-chip" data-filter="wrong">Câu sai</button>
+          <button class="filter-chip" data-filter="correct">Câu đúng</button>
+        </div>
+      </div>
       <div id="review-container"></div>
     </div>
   </div>
@@ -1138,10 +1158,36 @@ function renderResult(score, total){
   document.getElementById('result-verdict').textContent = verdict;
   document.getElementById('result-subverdict').textContent = sub;
 
+  reviewData = currentQuestions.map((item, i) => ({
+    i, item, isCorrect: firstAnswers[i] === item.answer
+  }));
+  reviewFilter = 'all';
+  renderReviewFilters();
+  renderReviewList();
+}
+
+let reviewData = [];
+let reviewFilter = 'all';
+
+function renderReviewFilters(){
+  const wrongCount = reviewData.filter(r => !r.isCorrect).length;
+  const correctCount = reviewData.filter(r => r.isCorrect).length;
+  const labels = { all: `Tất cả (${reviewData.length})`, wrong: `Câu sai (${wrongCount})`, correct: `Câu đúng (${correctCount})` };
+  document.querySelectorAll('#review-filters .filter-chip').forEach(btn => {
+    btn.textContent = labels[btn.dataset.filter];
+    btn.classList.toggle('active', btn.dataset.filter === reviewFilter);
+  });
+}
+
+function renderReviewList(){
   const reviewContainer = document.getElementById('review-container');
   reviewContainer.innerHTML = '';
-  currentQuestions.forEach((item, i) => {
-    const isCorrect = firstAnswers[i] === item.answer;
+  const filtered = reviewData.filter(r => reviewFilter === 'all' || (reviewFilter === 'wrong' ? !r.isCorrect : r.isCorrect));
+  if(filtered.length === 0){
+    reviewContainer.innerHTML = `<div class="review-empty">Không có câu nào ở mục này.</div>`;
+    return;
+  }
+  filtered.forEach(({ i, item, isCorrect }) => {
     const div = document.createElement('div');
     div.className = 'review-item';
     div.innerHTML = `
@@ -1157,6 +1203,14 @@ function renderResult(score, total){
     reviewContainer.appendChild(div);
   });
 }
+
+document.getElementById('review-filters').addEventListener('click', (e) => {
+  const btn = e.target.closest('.filter-chip');
+  if(!btn) return;
+  reviewFilter = btn.dataset.filter;
+  renderReviewFilters();
+  renderReviewList();
+});
 
 document.getElementById('btn-retry').addEventListener('click', () => startQuiz(currentSetIndex, currentMode));
 document.getElementById('btn-choose-other').addEventListener('click', () => { showScreen('home'); renderHome(); });
