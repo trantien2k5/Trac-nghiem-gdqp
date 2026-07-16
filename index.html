@@ -1155,6 +1155,49 @@ function xIcon(){
 }
 
 
+/* =========================================================
+   SOUND (Web Audio API — không cần file âm thanh ngoài)
+   ========================================================= */
+let audioCtx = null;
+function getAudioCtx(){
+  if(!audioCtx){
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if(AC){ try{ audioCtx = new AC(); }catch(e){} }
+  }
+  if(audioCtx && audioCtx.state === 'suspended'){
+    audioCtx.resume().catch(()=>{});
+  }
+  return audioCtx;
+}
+function playTone(ctx, freq, startTime, duration, type, peakGain){
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, startTime);
+  gain.gain.setValueAtTime(0.0001, startTime);
+  gain.gain.linearRampToValueAtTime(peakGain, startTime + 0.012);
+  gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(startTime);
+  osc.stop(startTime + duration + 0.03);
+}
+function playCorrectSound(){
+  const ctx = getAudioCtx();
+  if(!ctx) return;
+  const t = ctx.currentTime;
+  playTone(ctx, 1046.5, t, 0.13, 'sine', 0.16);        // C6
+  playTone(ctx, 1318.5, t + 0.07, 0.15, 'sine', 0.15); // E6
+  playTone(ctx, 1568.0, t + 0.14, 0.24, 'sine', 0.13); // G6
+}
+function playWrongSound(){
+  const ctx = getAudioCtx();
+  if(!ctx) return;
+  const t = ctx.currentTime;
+  playTone(ctx, 392.0, t, 0.13, 'triangle', 0.14);        // G4
+  playTone(ctx, 311.1, t + 0.09, 0.22, 'triangle', 0.12); // Eb4
+}
+
 function selectAnswer(optText){
   const qIdx = qOrder[currentIndex];
   slotAnswers[currentIndex] = optText;
@@ -1169,7 +1212,10 @@ function selectAnswer(optText){
     if(currentMode === 'practice') scheduleRepeat(qIdx);
   }
   renderQuestion();
-  if(currentMode === 'practice') showAnswerPopup(isCorrect, item);
+  if(currentMode === 'practice'){
+    isCorrect ? playCorrectSound() : playWrongSound();
+    showAnswerPopup(isCorrect, item);
+  }
 }
 
 function showAnswerPopup(isCorrect, item){
