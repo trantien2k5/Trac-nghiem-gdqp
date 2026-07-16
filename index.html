@@ -561,7 +561,7 @@
 
     <div class="explain-box hidden" id="explain-box"><span class="explain-icon">💡</span><span><span class="explain-label" id="explain-label">Mẹo:</span><span id="explain-text"></span></span></div>
 
-    <div class="quiz-nav">
+    <div class="quiz-nav" id="quiz-nav">
       <button class="btn btn-ghost" id="btn-prev">Trước</button>
       <button class="btn btn-primary" id="btn-next" disabled>Tiếp theo</button>
     </div>
@@ -962,6 +962,7 @@ function startQuiz(setIndex, mode){
   const gridBtn = document.getElementById('nav-grid-btn');
   const flagBtn = document.getElementById('flag-btn');
   const prevBtn = document.getElementById('btn-prev');
+  const quizNav = document.getElementById('quiz-nav');
 
   stopTimer();
   if(currentMode === 'exam'){
@@ -970,6 +971,7 @@ function startQuiz(setIndex, mode){
     gridBtn.style.display = 'flex';
     flagBtn.classList.remove('hidden');
     prevBtn.classList.remove('hidden');
+    quizNav.classList.remove('hidden');
     examSecondsTotal = currentQuestions.length * SECONDS_PER_QUESTION;
     examSecondsLeft = examSecondsTotal;
     updateTimerDisplay();
@@ -980,6 +982,8 @@ function startQuiz(setIndex, mode){
     gridBtn.style.display = 'none';
     flagBtn.classList.add('hidden');
     prevBtn.classList.add('hidden');
+    // Luyện tập: nút "Tiếp tục" đã có trong popup đúng/sai, không cần thanh nút cố định nữa.
+    quizNav.classList.add('hidden');
   }
 
   showScreen('quiz');
