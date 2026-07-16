@@ -253,6 +253,18 @@
   .feedback-banner.correct{ background: var(--green-bg); color: var(--green); }
   .feedback-banner.wrong{ background: var(--red-bg); color: var(--red); }
 
+  .explain-box{
+    margin: 10px 16px 0;
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    font-size: 13.5px; line-height:1.5;
+    display:flex; align-items:flex-start; gap:8px;
+    background: var(--indigo-glow); color: var(--text);
+    border: 1px solid rgba(99,102,241,0.25);
+  }
+  .explain-box .explain-icon{ flex-shrink:0; font-size:15px; line-height:1.4; }
+  .explain-box .explain-label{ font-weight:700; color: var(--indigo-soft); margin-right:4px; }
+
   .quiz-nav{
     padding: 18px 16px 8px;
     display:flex; gap:10px;
@@ -491,6 +503,7 @@
     <div class="options" id="options-container"></div>
 
     <div class="feedback-banner hidden" id="feedback-banner"></div>
+    <div class="explain-box hidden" id="explain-box"><span class="explain-icon">💡</span><span><span class="explain-label">Mẹo:</span><span id="explain-text"></span></span></div>
 
     <div class="quiz-nav">
       <button class="btn btn-ghost" id="btn-prev">Trước</button>
@@ -813,7 +826,8 @@ function startQuiz(setIndex, mode){
   currentQuestions = rawSet.map(q => ({
     q: q.q,
     answer: q.answer,
-    options: shuffle(q.options)
+    options: shuffle(q.options),
+    explain: q.explain
   }));
   currentIndex = 0;
   qOrder = currentQuestions.map((_, i) => i);
@@ -969,12 +983,20 @@ function renderQuestion(){
   });
 
   const banner = document.getElementById('feedback-banner');
+  const explainBox = document.getElementById('explain-box');
   if(!isExam && alreadyAnswered){
     const isCorrect = slotAnswers[currentIndex] === item.answer;
     const willRepeat = !isCorrect && appearCount[qIdx] < MAX_APPEARANCES;
     showBanner(isCorrect, willRepeat);
+    if(item.explain){
+      document.getElementById('explain-text').textContent = item.explain;
+      explainBox.classList.remove('hidden');
+    } else {
+      explainBox.classList.add('hidden');
+    }
   } else {
     banner.classList.add('hidden');
+    explainBox.classList.add('hidden');
   }
 
   const nextBtn = document.getElementById('btn-next');
@@ -1218,6 +1240,7 @@ function renderReviewList(){
         <span class="lbl">Bạn chọn:</span> ${escapeHtml(firstAnswers[i] ?? '(bỏ trống)')}
       </div>
       ${!isCorrect ? `<div class="r-correct-line"><span class="lbl" style="color:var(--text-faint)">Đáp án đúng:</span> ${escapeHtml(item.answer)}</div>` : ''}
+      ${item.explain ? `<div class="explain-box" style="margin:8px 0 0;"><span class="explain-icon">💡</span><span><span class="explain-label">Mẹo:</span>${escapeHtml(item.explain)}</span></div>` : ''}
     `;
     reviewContainer.appendChild(div);
   });
