@@ -265,6 +265,15 @@
   .explain-box .explain-icon{ flex-shrink:0; font-size:15px; line-height:1.4; }
   .explain-box .explain-label{ font-weight:700; color: var(--indigo-soft); margin-right:4px; }
 
+  .fullscreen-hint{
+    position: fixed; left:50%; top: 66px; transform: translateX(-50%);
+    z-index: 90; cursor:pointer;
+    background: var(--indigo); color:#fff;
+    font-size: 13px; font-weight:700;
+    padding: 9px 15px; border-radius: 20px;
+    box-shadow: 0 6px 20px -6px rgba(99,102,241,0.6);
+  }
+
   .quiz-nav{
     padding: 18px 16px 8px;
     display:flex; gap:10px;
@@ -473,6 +482,7 @@
 
   <!-- ============ QUIZ SCREEN ============ -->
   <div id="screen-quiz" class="hidden">
+    <div class="fullscreen-hint hidden" id="fullscreen-hint">⛶ Chạm để vào lại toàn màn hình</div>
     <div class="topbar">
       <div class="back-btn" id="quiz-back">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
@@ -741,11 +751,44 @@ const screens = {
   quiz: document.getElementById('screen-quiz'),
   result: document.getElementById('screen-result'),
 };
+function requestFullscreenSafe(){
+  const el = document.documentElement;
+  const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+  if(req){
+    try{
+      const p = req.call(el);
+      if(p && p.catch) p.catch(()=>{});
+    }catch(e){}
+  }
+}
+function exitFullscreenSafe(){
+  const exit = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+  if(document.fullscreenElement && exit){
+    try{
+      const p = exit.call(document);
+      if(p && p.catch) p.catch(()=>{});
+    }catch(e){}
+  }
+}
+
 function showScreen(name){
   Object.values(screens).forEach(s=>s.classList.add('hidden'));
   screens[name].classList.remove('hidden');
   window.scrollTo(0,0);
+  if(name === 'quiz'){
+    requestFullscreenSafe();
+  } else {
+    exitFullscreenSafe();
+  }
 }
+
+document.addEventListener('fullscreenchange', () => {
+  const hint = document.getElementById('fullscreen-hint');
+  if(!hint) return;
+  const inQuiz = !screens.quiz.classList.contains('hidden');
+  hint.classList.toggle('hidden', !(inQuiz && !document.fullscreenElement));
+});
+document.getElementById('fullscreen-hint') && document.getElementById('fullscreen-hint').addEventListener('click', requestFullscreenSafe);
 
 /* =========================================================
    HOME RENDER
