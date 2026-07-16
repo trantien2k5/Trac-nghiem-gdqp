@@ -243,16 +243,6 @@
   .option.wrong-reveal .letter{ background: var(--red); border-color: var(--red); color: #340B0B; }
   .option.dim{ opacity: 0.5; }
 
-  .feedback-banner{
-    margin: 14px 16px 0;
-    border-radius: var(--radius-sm);
-    padding: 12px 14px;
-    font-size: 14px; font-weight:600;
-    display:flex; align-items:center; gap:8px;
-  }
-  .feedback-banner.correct{ background: var(--green-bg); color: var(--green); }
-  .feedback-banner.wrong{ background: var(--red-bg); color: var(--red); }
-
   .explain-box{
     margin: 10px 16px 0;
     border-radius: var(--radius-sm);
@@ -514,7 +504,6 @@
 
     <div class="options" id="options-container"></div>
 
-    <div class="feedback-banner hidden" id="feedback-banner"></div>
     <div class="explain-box hidden" id="explain-box"><span class="explain-icon">💡</span><span><span class="explain-label" id="explain-label">Mẹo:</span><span id="explain-text"></span></span></div>
 
     <div class="quiz-nav">
@@ -1006,6 +995,11 @@ function renderQuestion(){
   const alreadyAnswered = slotAnswers[currentIndex] !== null;
 
   item.options.forEach((optText, i) => {
+    if(!isExam && alreadyAnswered){
+      const selected = slotAnswers[currentIndex];
+      const isRelevant = optText === item.answer || optText === selected;
+      if(!isRelevant) return; // only show the correct answer + the one you picked
+    }
     const opt = document.createElement('div');
     opt.className = 'option';
     opt.innerHTML = `
@@ -1027,12 +1021,9 @@ function renderQuestion(){
     container.appendChild(opt);
   });
 
-  const banner = document.getElementById('feedback-banner');
   const explainBox = document.getElementById('explain-box');
   if(!isExam && alreadyAnswered){
     const isCorrect = slotAnswers[currentIndex] === item.answer;
-    const willRepeat = !isCorrect && appearCount[qIdx] < MAX_APPEARANCES;
-    showBanner(isCorrect, willRepeat);
     const tip = isCorrect ? item.explain : (item.wrongTip || item.explain);
     const tipLabel = isCorrect ? 'Mẹo:' : 'Vì sao sai:';
     if(tip){
@@ -1044,7 +1035,6 @@ function renderQuestion(){
       explainBox.classList.add('hidden');
     }
   } else {
-    banner.classList.add('hidden');
     explainBox.classList.add('hidden');
   }
 
@@ -1093,12 +1083,6 @@ function xIcon(){
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--red)"><path d="M18 6L6 18M6 6l12 12"/></svg>`;
 }
 
-function showBanner(isCorrect, willRepeat){
-  const banner = document.getElementById('feedback-banner');
-  banner.classList.remove('hidden','correct','wrong');
-  banner.classList.add(isCorrect ? 'correct' : 'wrong');
-  banner.textContent = isCorrect ? '✓ Chính xác!' : (willRepeat ? '✗ Chưa đúng — câu này sẽ xuất hiện lại để bạn ôn' : '✗ Chưa đúng — xem đáp án đúng ở trên');
-}
 
 function selectAnswer(optText){
   const qIdx = qOrder[currentIndex];
