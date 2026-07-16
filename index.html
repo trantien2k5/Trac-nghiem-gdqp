@@ -411,6 +411,24 @@
     background: var(--indigo-glow); color: var(--indigo); margin-left:6px; vertical-align:middle;
   }
 
+  /* ---------- Answer feedback popup ---------- */
+  .answer-modal-sheet{ text-align:center; padding-top: 28px; }
+  .answer-modal-icon{
+    width:60px; height:60px; margin: 0 auto 14px;
+    border-radius:50%; display:flex; align-items:center; justify-content:center;
+  }
+  .answer-modal-icon svg{ width:30px; height:30px; }
+  .answer-modal-icon.ok{ background: var(--green-bg); color: var(--green); }
+  .answer-modal-icon.bad{ background: var(--red-bg); color: var(--red); }
+  .answer-modal-title{ font-size:19px; font-weight:800; letter-spacing:-0.01em; }
+  .answer-modal-title.ok-text{ color: var(--green); }
+  .answer-modal-title.bad-text{ color: var(--red); }
+  .answer-modal-correct{
+    font-size:14px; color: var(--text-dim); margin-top:8px; line-height:1.5;
+  }
+  .answer-modal-correct .lbl{ color: var(--text-faint); font-weight:600; }
+  .answer-modal-sheet .explain-box{ text-align:left; margin-top:16px; }
+
   /* ---------- Navigator modal ---------- */
   .nav-modal-sheet{
     width:100%; max-width:560px;
@@ -655,6 +673,17 @@
         <button class="btn btn-ghost" id="modal-cancel">Ở lại</button>
         <button class="btn btn-primary" id="modal-confirm">Thoát</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ============ ANSWER FEEDBACK POPUP ============ -->
+  <div id="answer-modal" class="modal-overlay hidden">
+    <div class="modal-sheet answer-modal-sheet">
+      <div class="answer-modal-icon" id="answer-modal-icon"></div>
+      <div class="answer-modal-title" id="answer-modal-title">Chính xác!</div>
+      <div class="answer-modal-correct hidden" id="answer-modal-correct"></div>
+      <div class="explain-box hidden" id="answer-modal-explain"><span class="explain-icon">💡</span><span><span class="explain-label" id="answer-modal-explain-label">Mẹo:</span><span id="answer-modal-explain-text"></span></span></div>
+      <button class="btn btn-primary" id="answer-modal-next" style="width:100%; margin-top:16px;">Tiếp tục</button>
     </div>
   </div>
 
@@ -1123,13 +1152,68 @@ function selectAnswer(optText){
   slotAnswers[currentIndex] = optText;
   if(firstAnswers[qIdx] === null) firstAnswers[qIdx] = optText;
   appearCount[qIdx]++;
-  if(optText === currentQuestions[qIdx].answer){
+  const item = currentQuestions[qIdx];
+  const isCorrect = optText === item.answer;
+  if(isCorrect){
     mastered[qIdx] = true;
   } else {
     mastered[qIdx] = false;
     if(currentMode === 'practice') scheduleRepeat(qIdx);
   }
   renderQuestion();
+  if(currentMode === 'practice') showAnswerPopup(isCorrect, item);
+}
+
+function showAnswerPopup(isCorrect, item){
+  const icon = document.getElementById('answer-modal-icon');
+  icon.className = 'answer-modal-icon ' + (isCorrect ? 'ok' : 'bad');
+  icon.innerHTML = isCorrect ? checkIcon() : xIcon();
+
+  const title = document.getElementById('answer-modal-title');
+  title.textContent = isCorrect ? 'Chính xác!' : 'Chưa đúng';
+  title.className = 'answer-modal-title ' + (isCorrect ? 'ok-text' : 'bad-text');
+
+  const correctLine = document.getElementById('answer-modal-correct');
+  if(!isCorrect){
+    correctLine.innerHTML = `<span class="lbl">Đáp án đúng:</span> ${escapeHtml(item.answer)}`;
+    correctLine.classList.remove('hidden');
+  } else {
+    correctLine.classList.add('hidden');
+  }
+
+  const tip = isCorrect ? item.explain : (item.wrongTip || item.explain);
+  const explainBox = document.getElementById('answer-modal-explain');
+  if(tip){
+    document.getElementById('answer-modal-explain-label').textContent = isCorrect ? 'Mẹo:' : 'Vì sao sai:';
+    document.getElementById('answer-modal-explain-text').textContent = tip;
+    explainBox.classList.remove('hidden');
+    explainBox.classList.toggle('wrong-tip', !isCorrect);
+  } else {
+    explainBox.classList.add('hidden');
+  }
+
+  document.getElementById('answer-modal').classList.remove('hidden');
+}
+function closeAnswerPopup(){
+  document.getElementById('answer-modal').classList.add('hidden');
+}
+document.getElementById('answer-modal-next').addEventListener('click', () => {
+  closeAnswerPopup();
+  advanceQuestion();
+});
+document.getElementById('answer-modal').addEventListener('click', (e) => {
+  if(e.target.id === 'answer-modal') closeAnswerPopup();
+});
+
+function advanceQuestion(){
+  if(currentIndex < qOrder.length - 1){
+    currentIndex++;
+    renderQuestion();
+  } else if(currentMode === 'exam'){
+    attemptSubmit();
+  } else {
+    finishQuiz();
+  }
 }
 
 document.getElementById('btn-prev').addEventListener('click', () => {
@@ -1139,16 +1223,7 @@ document.getElementById('btn-prev').addEventListener('click', () => {
   }
 });
 
-document.getElementById('btn-next').addEventListener('click', () => {
-  if(currentIndex < qOrder.length - 1){
-    currentIndex++;
-    renderQuestion();
-  } else if(currentMode === 'exam'){
-    attemptSubmit();
-  } else {
-    finishQuiz();
-  }
-});
+document.getElementById('btn-next').addEventListener('click', advanceQuestion);
 
 /* ---------- Question navigator (exam mode) ---------- */
 function openNavigator(){
