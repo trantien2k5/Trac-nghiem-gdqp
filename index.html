@@ -148,6 +148,22 @@
     padding: 10px 24px 20px; text-align:center; color: var(--text-faint); font-size:12px;
   }
 
+  .app-footer{
+    margin-top: 6px;
+    padding: 18px 24px calc(16px + env(safe-area-inset-bottom));
+    text-align: center;
+    border-top: 1px solid var(--border);
+  }
+  .app-footer .footer-copyright{
+    font-size: 11.5px; font-weight: 700; letter-spacing: 0.04em;
+    color: var(--text-faint);
+  }
+  .app-footer .footer-copyright .dot{
+    display:inline-block; width:3px; height:3px; border-radius:50%;
+    background: var(--indigo); margin: 0 7px 1px; vertical-align:middle;
+  }
+  .app-footer .footer-note{ padding: 4px 0 0; }
+
   /* ---------- HP list screen ---------- */
   .hp-list{ display:flex; flex-direction:column; gap:12px; padding: 8px 16px 20px; }
   .hp-card{
@@ -439,6 +455,9 @@
       <p>Chọn học phần để bắt đầu ôn tập.</p>
     </div>
     <div class="hp-list" id="hp-list"></div>
+    <div class="app-footer">
+      <div class="footer-copyright">Ôn Tập Trắc Nghiệm GDQP<span class="dot"></span>© 2026 Trần Tiến</div>
+    </div>
   </div>
 
   <!-- ============ HOME SCREEN ============ -->
@@ -469,7 +488,10 @@
       </div>
     </div>
     <div class="set-grid" id="set-grid"></div>
-    <div class="footer-note">Dữ liệu lưu trên máy bạn (localStorage)</div>
+    <div class="app-footer">
+      <div class="footer-copyright">© 2026 Trần Tiến</div>
+      <div class="footer-note">Dữ liệu lưu trên máy bạn (localStorage)</div>
+    </div>
   </div>
 
   <!-- ============ QUIZ SCREEN ============ -->
