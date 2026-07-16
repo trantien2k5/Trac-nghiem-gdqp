@@ -378,6 +378,9 @@
     background: rgba(20,22,42,0.35);
     display:flex; align-items:flex-end; justify-content:center;
   }
+  .modal-overlay.center-modal{
+    align-items:center; padding: 20px;
+  }
   .modal-sheet{
     width:100%; max-width:560px;
     background: var(--bg-elev);
@@ -412,7 +415,12 @@
   }
 
   /* ---------- Answer feedback popup ---------- */
-  .answer-modal-sheet{ text-align:center; padding-top: 28px; }
+  .answer-modal-sheet{
+    text-align:center; padding-top: 28px;
+    border-radius: 20px;
+    max-width: 380px;
+    box-shadow: 0 20px 50px -12px rgba(20,22,42,0.35);
+  }
   .answer-modal-icon{
     width:60px; height:60px; margin: 0 auto 14px;
     border-radius:50%; display:flex; align-items:center; justify-content:center;
@@ -677,7 +685,7 @@
   </div>
 
   <!-- ============ ANSWER FEEDBACK POPUP ============ -->
-  <div id="answer-modal" class="modal-overlay hidden">
+  <div id="answer-modal" class="modal-overlay center-modal hidden">
     <div class="modal-sheet answer-modal-sheet">
       <div class="answer-modal-icon" id="answer-modal-icon"></div>
       <div class="answer-modal-title" id="answer-modal-title">Chính xác!</div>
