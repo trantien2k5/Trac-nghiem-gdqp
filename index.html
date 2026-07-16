@@ -679,14 +679,15 @@ function loadResults(){
     return raw ? JSON.parse(raw) : {};
   }catch(e){ return {}; }
 }
-function saveResult(setIndex, score, total, wrongIndices){
+function saveResult(setIndex, score, total, wrongIndices, mastery){
   const results = loadResults();
   const prev = results[setIndex];
   results[setIndex] = {
     score, total,
     best: prev ? Math.max(prev.best, score) : score,
     attempts: prev ? prev.attempts + 1 : 1,
-    wrongIndices: wrongIndices || []
+    wrongIndices: wrongIndices || [],
+    mastery: mastery || {}
   };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(results));
 }
@@ -723,6 +724,7 @@ let mastered = [];           // original index -> answered correctly at least on
 let appearCount = [];        // original index -> how many times shown (practice mode, caps repeats)
 const MAX_APPEARANCES = 4;   // safety cap so a missed question doesn't repeat forever
 const REPEAT_GAP = 3;        // show a missed question again a few cards later, not immediately
+const MASTERY_CAP = 3;       // correct-streak (across practice sessions) needed to stop being prioritized
 let currentMode = 'practice'; // 'practice' | 'exam'
 let pendingSetIndex = null;
 let flagged = [];            // array of booleans, exam mode
@@ -868,12 +870,15 @@ function startQuiz(setIndex, mode){
   slotIsPriority = new Array(qOrder.length).fill(false);
   if(currentMode === 'practice'){
     const prevResult = loadResults()[setIndex];
-    const wrongSet = new Set((prevResult && prevResult.wrongIndices) || []);
-    if(wrongSet.size > 0){
-      const prioritized = qOrder.filter(i => wrongSet.has(i));
-      const rest = qOrder.filter(i => !wrongSet.has(i));
-      qOrder = [...prioritized, ...rest];
-      for(let p = 0; p < prioritized.length; p++) slotIsPriority[p] = true;
+    const masteryMap = (prevResult && prevResult.mastery) || {};
+    if(Object.keys(masteryMap).length > 0){
+      // Ít thuộc nhất (streak trả lời đúng liên tiếp thấp) lên đầu, thuộc kỹ rồi ra cuối.
+      // Streak được chặn ở MASTERY_CAP để câu từng sai không bị "phạt" mãi mãi sau khi đã ôn vững.
+      const masteryKey = (i) => Math.min(masteryMap[i] || 0, MASTERY_CAP);
+      qOrder = qOrder.slice().sort((a, b) => masteryKey(a) - masteryKey(b));
+      for(let p = 0; p < qOrder.length; p++){
+        slotIsPriority[p] = masteryKey(qOrder[p]) === 0;
+      }
     }
   }
   slotAnswers = new Array(qOrder.length).fill(null);
@@ -985,7 +990,7 @@ function renderQuestion(){
   }
   let qTag = '';
   if(!isExam && slotIsRepeat[currentIndex]) qTag = ' · Ôn lại';
-  else if(!isExam && slotIsPriority[currentIndex]) qTag = ' · Ưu tiên (sai lần trước)';
+  else if(!isExam && slotIsPriority[currentIndex]) qTag = ' · Chưa thuộc, cần ôn thêm';
   document.getElementById('q-num-label').textContent = `CÂU ${qIdx+1}` + qTag;
   document.getElementById('q-text').textContent = item.q;
 
@@ -1200,7 +1205,17 @@ function finishQuiz(){
   const score = firstAnswers.reduce((acc, ans, i) => acc + (ans === currentQuestions[i].answer ? 1 : 0), 0);
   const wrongIndices = [];
   firstAnswers.forEach((ans, i) => { if(ans !== currentQuestions[i].answer) wrongIndices.push(i); });
-  saveResult(currentSetIndex, score, total, wrongIndices);
+
+  const prevResult = loadResults()[currentSetIndex];
+  const prevMastery = (prevResult && prevResult.mastery) || {};
+  const newMastery = {};
+  currentQuestions.forEach((item, i) => {
+    const wasCorrect = firstAnswers[i] === item.answer;
+    const prevStreak = prevMastery[i] || 0;
+    newMastery[i] = wasCorrect ? prevStreak + 1 : 0;
+  });
+
+  saveResult(currentSetIndex, score, total, wrongIndices, newMastery);
   renderResult(score, total);
   showScreen('result');
 }
