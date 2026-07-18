@@ -216,6 +216,22 @@
   .stats-cell.m-wrong{ background: var(--red-bg); border-color: rgba(224,71,63,0.35); color: var(--red); }
   .stats-empty{ text-align:center; color: var(--text-faint); font-size:13.5px; padding: 40px 20px; }
 
+  .wrong-review-card{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    margin: 14px 16px 4px;
+    background: var(--red-bg); border:1px solid rgba(224,71,63,0.3); border-radius: var(--radius);
+    padding: 16px;
+  }
+  .wrong-review-card .wrc-title{ font-size:14.5px; font-weight:700; color: var(--red); }
+  .wrong-review-card .wrc-desc{ font-size:12.5px; color: var(--text-dim); margin-top:3px; }
+  .wrong-review-card #stats-review-btn{ flex-shrink:0; padding: 10px 16px; font-size:13.5px; }
+  .wrong-review-card.ok{ background: var(--green-bg); border-color: rgba(15,157,99,0.3); justify-content:center; }
+  .wrong-review-card.ok .wrc-title{ color: var(--green); }
+  .wrong-badge{
+    display:inline-block; font-size:11px; font-weight:700; color: var(--red);
+    background: var(--red-bg); border-radius:20px; padding:2px 8px; margin-left:8px; vertical-align:middle;
+  }
+
   /* ---------- HP list screen ---------- */
   .hp-list{ display:flex; flex-direction:column; gap:12px; padding: 8px 16px 20px; }
   .hp-card{
@@ -840,6 +856,8 @@ function escapeHtml(str){
    STATE
    ========================================================= */
 let currentSetIndex = null;
+let reviewSessionActive = false; // true when doing a cross-đề "Ôn câu sai" session (not a single đề)
+let reviewSessionLabel = '';
 let currentQuestions = [];   // array of {q, options(shuffled), answer}
 let currentIndex = 0;        // pointer into qOrder (the play queue)
 let qOrder = [];             // slot -> original question index (grows when a question is repeated)
@@ -989,7 +1007,35 @@ document.getElementById('mode-exam').addEventListener('click', () => {
   startQuiz(pendingSetIndex, 'exam');
 });
 
+function setupQuizUiForMode(mode){
+  const counterEl = document.getElementById('quiz-counter');
+  const timerEl = document.getElementById('timer-badge');
+  const gridBtn = document.getElementById('nav-grid-btn');
+  const flagBtn = document.getElementById('flag-btn');
+  const prevBtn = document.getElementById('btn-prev');
+  const quizNav = document.getElementById('quiz-nav');
+
+  stopTimer();
+  if(mode === 'exam'){
+    counterEl.classList.add('hidden');
+    timerEl.classList.remove('hidden');
+    gridBtn.style.display = 'flex';
+    flagBtn.classList.remove('hidden');
+    prevBtn.classList.remove('hidden');
+    quizNav.classList.remove('hidden');
+  } else {
+    counterEl.classList.remove('hidden');
+    timerEl.classList.add('hidden');
+    gridBtn.style.display = 'none';
+    flagBtn.classList.add('hidden');
+    prevBtn.classList.add('hidden');
+    // Luyện tập: nút "Tiếp tục" đã có trong popup đúng/sai, không cần thanh nút cố định nữa.
+    quizNav.classList.add('hidden');
+  }
+}
+
 function startQuiz(setIndex, mode){
+  reviewSessionActive = false;
   currentSetIndex = setIndex;
   currentMode = mode || 'practice';
   const rawSet = SETS[setIndex];
@@ -997,7 +1043,8 @@ function startQuiz(setIndex, mode){
     q: q.q,
     answer: q.answer,
     options: shuffle(q.options),
-    explain: q.explain
+    explain: q.explain,
+    wrongTip: q.wrongTip
   }));
   currentIndex = 0;
   qOrder = currentQuestions.map((_, i) => i);
@@ -1025,35 +1072,72 @@ function startQuiz(setIndex, mode){
   quizStartTime = Date.now();
   document.getElementById('quiz-title').textContent = `Đề ${setIndex+1}` + (currentMode === 'exam' ? ' · Thi thử' : ' · Luyện tập');
 
-  const counterEl = document.getElementById('quiz-counter');
-  const timerEl = document.getElementById('timer-badge');
-  const gridBtn = document.getElementById('nav-grid-btn');
-  const flagBtn = document.getElementById('flag-btn');
-  const prevBtn = document.getElementById('btn-prev');
-  const quizNav = document.getElementById('quiz-nav');
-
-  stopTimer();
+  setupQuizUiForMode(currentMode);
   if(currentMode === 'exam'){
-    counterEl.classList.add('hidden');
-    timerEl.classList.remove('hidden');
-    gridBtn.style.display = 'flex';
-    flagBtn.classList.remove('hidden');
-    prevBtn.classList.remove('hidden');
-    quizNav.classList.remove('hidden');
     examSecondsTotal = currentQuestions.length * SECONDS_PER_QUESTION;
     examSecondsLeft = examSecondsTotal;
     updateTimerDisplay();
     timerInterval = setInterval(tickTimer, 1000);
-  } else {
-    counterEl.classList.remove('hidden');
-    timerEl.classList.add('hidden');
-    gridBtn.style.display = 'none';
-    flagBtn.classList.add('hidden');
-    prevBtn.classList.add('hidden');
-    // Luyện tập: nút "Tiếp tục" đã có trong popup đúng/sai, không cần thanh nút cố định nữa.
-    quizNav.classList.add('hidden');
   }
 
+  showScreen('quiz');
+  renderDots();
+  renderQuestion();
+}
+
+function collectWrongQuestions(hp){
+  const results = loadResultsFor(hp.id);
+  const setSize = hp.setSize;
+  const totalSets = Math.ceil(hp.questions.length / setSize);
+  const list = [];
+  for(let s = 0; s < totalSets; s++){
+    const r = results[s];
+    if(!r) continue;
+    const start = s * setSize;
+    const end = Math.min(start + setSize, hp.questions.length);
+    for(let i = 0; i < end - start; i++){
+      if(questionState(r.mastery, r.wrongIndices, i) === 'wrong'){
+        const q = hp.questions[start + i];
+        list.push({ q: q.q, answer: q.answer, options: q.options, explain: q.explain, wrongTip: q.wrongTip,
+          _origin: { hpId: hp.id, setIndex: s, localIndex: i } });
+      }
+    }
+  }
+  return list;
+}
+
+function startReviewSession(hp){
+  const list = collectWrongQuestions(hp);
+  if(list.length === 0) return;
+
+  reviewSessionActive = true;
+  reviewSessionLabel = `Ôn câu sai · ${hp.name}`;
+  selectHp(hp);
+  currentSetIndex = null;
+  currentMode = 'practice';
+
+  currentQuestions = list.map(item => ({
+    q: item.q,
+    answer: item.answer,
+    options: shuffle(item.options),
+    explain: item.explain,
+    wrongTip: item.wrongTip,
+    _origin: item._origin
+  }));
+  currentIndex = 0;
+  qOrder = currentQuestions.map((_, i) => i);
+  slotIsPriority = new Array(qOrder.length).fill(true); // toàn bộ danh sách này vốn đã là "cần ôn"
+  slotAnswers = new Array(qOrder.length).fill(null);
+  slotIsRepeat = new Array(qOrder.length).fill(false);
+  firstAnswers = new Array(currentQuestions.length).fill(null);
+  mastered = new Array(currentQuestions.length).fill(false);
+  appearCount = new Array(currentQuestions.length).fill(0);
+  flagged = new Array(currentQuestions.length).fill(false);
+  timeUp = false;
+  quizStartTime = Date.now();
+  document.getElementById('quiz-title').textContent = reviewSessionLabel;
+
+  setupQuizUiForMode('practice');
   showScreen('quiz');
   renderDots();
   renderQuestion();
@@ -1433,6 +1517,42 @@ function finishQuiz(){
   stopTimer();
   const total = currentQuestions.length;
   const score = firstAnswers.reduce((acc, ans, i) => acc + (ans === currentQuestions[i].answer ? 1 : 0), 0);
+
+  if(reviewSessionActive){
+    // Câu trong phiên "Ôn câu sai" đến từ nhiều đề khác nhau — cập nhật độ thuộc (mastery)
+    // đúng vào đề gốc của từng câu, không đụng tới điểm/số lần làm của cả đề đó.
+    const byHp = {};
+    currentQuestions.forEach((item, i) => {
+      const origin = item._origin;
+      if(!origin) return;
+      const wasCorrect = firstAnswers[i] === item.answer;
+      byHp[origin.hpId] = byHp[origin.hpId] || {};
+      byHp[origin.hpId][origin.setIndex] = byHp[origin.hpId][origin.setIndex] || [];
+      byHp[origin.hpId][origin.setIndex].push({ localIndex: origin.localIndex, wasCorrect });
+    });
+    Object.keys(byHp).forEach(hpId => {
+      const results = loadResultsFor(hpId);
+      Object.keys(byHp[hpId]).forEach(setIndexStr => {
+        const setIndex = Number(setIndexStr);
+        const r = results[setIndex] || { score: 0, total: 0, best: 0, attempts: 0, wrongIndices: [], mastery: {} };
+        const mastery = r.mastery || {};
+        const wrongSet = new Set(r.wrongIndices || []);
+        byHp[hpId][setIndex].forEach(u => {
+          const prevStreak = mastery[u.localIndex] || 0;
+          mastery[u.localIndex] = u.wasCorrect ? prevStreak + 1 : 0;
+          if(u.wasCorrect) wrongSet.delete(u.localIndex); else wrongSet.add(u.localIndex);
+        });
+        r.mastery = mastery;
+        r.wrongIndices = Array.from(wrongSet);
+        results[setIndex] = r;
+      });
+      localStorage.setItem('quiz_' + hpId + '_results_v1', JSON.stringify(results));
+    });
+    renderResult(score, total);
+    showScreen('result');
+    return;
+  }
+
   const wrongIndices = [];
   firstAnswers.forEach((ans, i) => { if(ans !== currentQuestions[i].answer) wrongIndices.push(i); });
 
@@ -1451,7 +1571,9 @@ function finishQuiz(){
 }
 
 function renderResult(score, total){
-  document.getElementById('result-set-label').textContent = `Đề ${currentSetIndex+1}` + (currentMode === 'exam' ? ' · Thi thử' : ' · Luyện tập');
+  document.getElementById('result-set-label').textContent = reviewSessionActive
+    ? reviewSessionLabel
+    : `Đề ${currentSetIndex+1}` + (currentMode === 'exam' ? ' · Thi thử' : ' · Luyện tập');
   document.getElementById('score-num').textContent = score;
   document.getElementById('score-den').textContent = `/ ${total}`;
 
@@ -1538,7 +1660,10 @@ document.getElementById('review-filters').addEventListener('click', (e) => {
   renderReviewList();
 });
 
-document.getElementById('btn-retry').addEventListener('click', () => startQuiz(currentSetIndex, currentMode));
+document.getElementById('btn-retry').addEventListener('click', () => {
+  if(reviewSessionActive) startReviewSession(currentHp);
+  else startQuiz(currentSetIndex, currentMode);
+});
 document.getElementById('btn-choose-other').addEventListener('click', () => { showScreen('home'); renderHome(); });
 document.getElementById('result-home-btn').addEventListener('click', () => { showScreen('home'); renderHome(); });
 
@@ -1678,7 +1803,7 @@ function renderStatsOverview(container){
     card.className = 'hp-card stats-hp-card';
     card.innerHTML = `
       <div style="flex:1; min-width:0;">
-        <div class="hp-name">${escapeHtml(s.hp.name)}</div>
+        <div class="hp-name">${escapeHtml(s.hp.name)}${s.wrongCount > 0 ? `<span class="wrong-badge">${s.wrongCount} câu sai</span>` : ''}</div>
         <div class="hp-desc">${s.masteredCount}/${s.totalQuestions} câu đã thuộc · ${s.masteredPct}% · ${s.attemptedSets}/${s.totalSets} đề đã làm</div>
         <div class="bar-track"><div class="bar-fill" style="width:${s.masteredPct}%"></div></div>
       </div>
@@ -1704,6 +1829,17 @@ function renderStatsHp(container){
       <div class="stat-chip"><div class="num">${s.avgPct || '—'}${s.avgPct ? '%' : ''}</div><div class="label">Điểm TB</div></div>
       <div class="stat-chip"><div class="num">${s.bestPct || '—'}${s.bestPct ? '%' : ''}</div><div class="label">Điểm cao nhất</div></div>
     </div>
+    ${s.wrongCount > 0 ? `
+    <div class="wrong-review-card">
+      <div>
+        <div class="wrc-title">🔴 ${s.wrongCount} câu sai cần ôn</div>
+        <div class="wrc-desc">Gom lại từ tất cả các đề, luyện tập riêng cho đến khi thuộc.</div>
+      </div>
+      <button class="btn btn-primary" id="stats-review-btn">Ôn ngay</button>
+    </div>` : `
+    <div class="wrong-review-card ok">
+      <div class="wrc-title">🎉 Không có câu nào đang sai</div>
+    </div>`}
     <div class="stats-section-title">Theo đề (${s.attemptedSets}/${s.totalSets} đã làm)</div>
     <div id="stats-set-list"></div>
   `;
@@ -1711,6 +1847,8 @@ function renderStatsHp(container){
     statsView = { level: 'overview', hpId: null, setIndex: null };
     renderStats();
   });
+  const reviewBtn = document.getElementById('stats-review-btn');
+  if(reviewBtn) reviewBtn.addEventListener('click', () => startReviewSession(hp));
 
   const list = document.getElementById('stats-set-list');
   s.perSet.forEach(row => {
