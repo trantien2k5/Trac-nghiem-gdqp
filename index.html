@@ -278,6 +278,9 @@
   .qcard .qnum{
     font-size:12px; font-weight:700; color: var(--indigo); letter-spacing:0.05em; margin-bottom:10px;
   }
+  .mastery-pct{
+    font-size:12px; font-weight:600; color: var(--text-dim); margin-bottom:8px;
+  }
   .qcard-head{
     display:flex; align-items:center; justify-content:space-between; margin-bottom:2px;
   }
@@ -624,6 +627,7 @@
     <div class="dot-row" id="dot-row"></div>
 
     <div class="qcard">
+      <div class="mastery-pct hidden" id="mastery-pct"></div>
       <div class="qcard-head">
         <div class="qnum" id="q-num-label">CÂU 1</div>
         <div class="flag-btn hidden" id="flag-btn">
@@ -1009,6 +1013,7 @@ document.getElementById('mode-exam').addEventListener('click', () => {
 
 function setupQuizUiForMode(mode){
   const counterEl = document.getElementById('quiz-counter');
+  const masteryPctEl = document.getElementById('mastery-pct');
   const timerEl = document.getElementById('timer-badge');
   const gridBtn = document.getElementById('nav-grid-btn');
   const flagBtn = document.getElementById('flag-btn');
@@ -1018,13 +1023,16 @@ function setupQuizUiForMode(mode){
   stopTimer();
   if(mode === 'exam'){
     counterEl.classList.add('hidden');
+    masteryPctEl.classList.add('hidden');
     timerEl.classList.remove('hidden');
     gridBtn.style.display = 'flex';
     flagBtn.classList.remove('hidden');
     prevBtn.classList.remove('hidden');
     quizNav.classList.remove('hidden');
   } else {
-    counterEl.classList.remove('hidden');
+    // % đã thuộc hiện ngay trong thẻ câu hỏi (trên dòng CÂU X), không hiện ở thanh trên cùng nữa.
+    counterEl.classList.add('hidden');
+    masteryPctEl.classList.remove('hidden');
     timerEl.classList.add('hidden');
     gridBtn.style.display = 'none';
     flagBtn.classList.add('hidden');
@@ -1208,7 +1216,7 @@ function renderQuestion(){
   } else {
     const masteredCount = mastered.filter(Boolean).length;
     const masteredPct = currentQuestions.length ? Math.round(masteredCount/currentQuestions.length*100) : 0;
-    document.getElementById('quiz-counter').textContent = `${masteredPct}% đã thuộc`;
+    document.getElementById('mastery-pct').textContent = `${masteredPct}% đã thuộc`;
     document.getElementById('progress-fill').style.width = `${masteredPct}%`;
   }
   let qTag = '';
