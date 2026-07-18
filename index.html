@@ -1502,6 +1502,12 @@ function renderQuestion(){
   if(isExam){
     document.getElementById('quiz-counter').textContent = `${currentIndex+1}/${currentQuestions.length}`;
     document.getElementById('progress-fill').style.width = `${((currentIndex)/currentQuestions.length)*100}%`;
+  } else if(adaptiveSessionActive){
+    // Luyện tập thông minh: % đã thuộc là của riêng câu đang xem (mastery/5), không phải tiến độ cả phiên.
+    const stat = adaptiveStatFor(loadAdaptive(currentHp.id), item._adaptiveId);
+    const qPct = Math.round(stat.mastery / ADAPTIVE_MASTERY_CAP * 100);
+    document.getElementById('mastery-pct').textContent = `${qPct}% đã thuộc`;
+    document.getElementById('progress-fill').style.width = `${Math.round((currentIndex/qOrder.length)*100)}%`;
   } else {
     const masteredCount = mastered.filter(Boolean).length;
     const masteredPct = currentQuestions.length ? Math.round(masteredCount/currentQuestions.length*100) : 0;
