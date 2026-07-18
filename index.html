@@ -1207,8 +1207,9 @@ function renderQuestion(){
     document.getElementById('progress-fill').style.width = `${((currentIndex)/currentQuestions.length)*100}%`;
   } else {
     const masteredCount = mastered.filter(Boolean).length;
-    document.getElementById('quiz-counter').textContent = `${masteredCount}/${currentQuestions.length} đã thuộc`;
-    document.getElementById('progress-fill').style.width = `${(masteredCount/currentQuestions.length)*100}%`;
+    const masteredPct = currentQuestions.length ? Math.round(masteredCount/currentQuestions.length*100) : 0;
+    document.getElementById('quiz-counter').textContent = `${masteredPct}% đã thuộc`;
+    document.getElementById('progress-fill').style.width = `${masteredPct}%`;
   }
   let qTag = '';
   if(!isExam && slotIsRepeat[currentIndex]) qTag = ' · Ôn lại';
