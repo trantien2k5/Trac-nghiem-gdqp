@@ -232,6 +232,59 @@
     background: var(--red-bg); border-radius:20px; padding:2px 8px; margin-left:8px; vertical-align:middle;
   }
 
+  /* ---------- Overview cards (tổng quan thống kê) ---------- */
+  .ov-grid{
+    display:grid; grid-template-columns: 1fr 1fr; gap:12px;
+    padding: 4px 16px 20px;
+  }
+  .ov-card{
+    grid-column: span 1;
+    background: var(--bg-elev); border:1px solid var(--border); border-radius: var(--radius);
+    padding: 16px; cursor:pointer; box-shadow: var(--shadow-card);
+    display:flex; flex-direction:column; gap:2px;
+  }
+  .ov-card:active{ transform: scale(0.98); }
+  .ov-card.ov-wide{ grid-column: span 2; }
+  .ov-card .ov-top{ display:flex; align-items:center; justify-content:space-between; }
+  .ov-card .ov-icon{ font-size:18px; }
+  .ov-card .ov-arrow{ color: var(--text-faint); flex-shrink:0; }
+  .ov-card .ov-value{ font-size:24px; font-weight:800; letter-spacing:-0.02em; margin-top:8px; }
+  .ov-card .ov-label{ font-size:12.5px; color: var(--text-dim); font-weight:600; }
+  .ov-card .ov-sub{ font-size:11.5px; color: var(--text-faint); margin-top:4px; }
+  .ov-card.ov-accent-red .ov-value{ color: var(--red); }
+  .ov-card.ov-accent-amber .ov-value{ color: var(--amber); }
+  .ov-card.ov-accent-green .ov-value{ color: var(--green); }
+  .ov-card .ov-mini-hp{ display:flex; align-items:center; justify-content:space-between; font-size:12.5px; margin-top:6px; }
+  .ov-card .ov-mini-hp .ov-mini-name{ color: var(--text-dim); }
+  .ov-card .ov-mini-hp .ov-mini-pct{ font-weight:700; color: var(--indigo); }
+
+  /* ---------- Biểu đồ 7 ngày ---------- */
+  .chart-wrap{ padding: 6px 16px 18px; }
+  .chart-bars{ display:flex; align-items:flex-end; gap:8px; height:110px; }
+  .chart-bar{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; }
+  .chart-bar .cb-track{ width:100%; max-width:28px; height:84px; display:flex; align-items:flex-end; background: var(--bg-elev-2); border-radius:6px; overflow:hidden; }
+  .chart-bar .cb-fill{ width:100%; background: var(--indigo); border-radius:6px 6px 0 0; min-height:2px; }
+  .chart-bar .cb-day{ font-size:10.5px; color: var(--text-faint); margin-top:6px; }
+  .chart-bar .cb-val{ font-size:10.5px; color: var(--text-dim); font-weight:700; margin-bottom:4px; }
+
+  .history-row{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+  }
+  .history-row:last-child{ border-bottom:none; }
+  .history-row .hr-date{ font-size:14px; font-weight:700; }
+  .history-row .hr-sub{ font-size:12px; color: var(--text-dim); margin-top:2px; }
+  .history-row .hr-pct{ font-size:15px; font-weight:800; color: var(--indigo); flex-shrink:0; }
+
+  .streak-dots{ display:flex; gap:6px; padding: 4px 16px 20px; flex-wrap:wrap; }
+  .streak-dot{
+    width:30px; height:30px; border-radius:9px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    font-size:10.5px; font-weight:700; color: var(--text-faint);
+    background: var(--bg-elev-2); border:1px solid var(--border);
+  }
+  .streak-dot.active{ background: var(--indigo); border-color: var(--indigo); color:#fff; }
+
   /* ---------- HP list screen ---------- */
   .hp-list{ display:flex; flex-direction:column; gap:12px; padding: 8px 16px 20px; }
   .hp-card{
@@ -833,6 +886,67 @@ function saveResult(setIndex, score, total, wrongIndices, mastery){
 }
 
 /* =========================================================
+   ACTIVITY LOG (tổng câu đã làm, độ chính xác, chuỗi ngày học,
+   lịch sử theo ngày — dùng chung cho mọi học phần)
+   ========================================================= */
+const ACTIVITY_KEY = 'quiz_activity_v1';
+
+function todayStr(){ return dateStrFromOffset(0); }
+function dateStrFromOffset(daysAgo){
+  const d = new Date();
+  d.setDate(d.getDate() - daysAgo);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function emptyActivity(){
+  return { totalAnswered:0, totalCorrect:0, totalWrong:0, totalTimeMs:0, sessionCount:0, byDate:{}, streakCurrent:0, streakBest:0, lastActiveDate:null };
+}
+function loadActivity(){
+  try{
+    const raw = localStorage.getItem(ACTIVITY_KEY);
+    return raw ? Object.assign(emptyActivity(), JSON.parse(raw)) : emptyActivity();
+  }catch(e){ return emptyActivity(); }
+}
+function saveActivity(a){ localStorage.setItem(ACTIVITY_KEY, JSON.stringify(a)); }
+function touchStreak(a, today){
+  if(a.lastActiveDate === today) return; // hôm nay đã tính rồi
+  const yesterday = dateStrFromOffset(1);
+  a.streakCurrent = (a.lastActiveDate === yesterday) ? a.streakCurrent + 1 : 1;
+  a.streakBest = Math.max(a.streakBest, a.streakCurrent);
+  a.lastActiveDate = today;
+}
+function logAnswer(isCorrect){
+  const a = loadActivity();
+  const today = todayStr();
+  touchStreak(a, today);
+  a.totalAnswered++;
+  if(isCorrect) a.totalCorrect++; else a.totalWrong++;
+  const bucket = a.byDate[today] || { answered:0, correct:0, wrong:0, timeMs:0 };
+  bucket.answered++;
+  if(isCorrect) bucket.correct++; else bucket.wrong++;
+  a.byDate[today] = bucket;
+  saveActivity(a);
+}
+function logSessionTime(ms){
+  if(!ms || ms <= 0) return;
+  const a = loadActivity();
+  const today = todayStr();
+  a.totalTimeMs += ms;
+  a.sessionCount++;
+  const bucket = a.byDate[today] || { answered:0, correct:0, wrong:0, timeMs:0 };
+  bucket.timeMs = (bucket.timeMs || 0) + ms;
+  a.byDate[today] = bucket;
+  saveActivity(a);
+}
+// Chuỗi hiển thị: nếu bỏ lỡ >= 2 ngày liên tiếp thì coi như đã đứt (chỉ để hiển thị,
+// số liệu lưu trong storage vẫn giữ nguyên tới lần trả lời tiếp theo).
+function liveStreak(a){
+  const today = todayStr();
+  if(!a.lastActiveDate) return 0;
+  if(a.lastActiveDate === today || a.lastActiveDate === dateStrFromOffset(1)) return a.streakCurrent;
+  return 0;
+}
+
+/* =========================================================
    UTIL
    ========================================================= */
 function shuffle(arr){
@@ -1325,10 +1439,12 @@ function playWrongSound(){
 function selectAnswer(optText){
   const qIdx = qOrder[currentIndex];
   slotAnswers[currentIndex] = optText;
-  if(firstAnswers[qIdx] === null) firstAnswers[qIdx] = optText;
+  const isFirstAttempt = firstAnswers[qIdx] === null;
+  if(isFirstAttempt) firstAnswers[qIdx] = optText;
   appearCount[qIdx]++;
   const item = currentQuestions[qIdx];
   const isCorrect = optText === item.answer;
+  if(isFirstAttempt) logAnswer(isCorrect);
   if(isCorrect){
     mastered[qIdx] = true;
   } else {
@@ -1508,6 +1624,7 @@ document.getElementById('modal-confirm').addEventListener('click', () => {
    ========================================================= */
 function finishQuiz(){
   stopTimer();
+  logSessionTime(Date.now() - quizStartTime);
   const total = currentQuestions.length;
   const score = firstAnswers.reduce((acc, ans, i) => acc + (ans === currentQuestions[i].answer ? 1 : 0), 0);
 
@@ -1751,6 +1868,10 @@ function renderStats(){
   const container = document.getElementById('stats-content');
   if(statsView.level === 'hp') renderStatsHp(container);
   else if(statsView.level === 'set') renderStatsSet(container);
+  else if(statsView.level === 'hp-list') renderStatsHpList(container);
+  else if(statsView.level === 'performance') renderStatsPerformance(container);
+  else if(statsView.level === 'streak') renderStatsStreak(container);
+  else if(statsView.level === 'wrong') renderStatsWrong(container);
   else renderStatsOverview(container);
 }
 
@@ -1763,28 +1884,209 @@ function statsTopbar(title, onBack){
   `;
 }
 
-function renderStatsOverview(container){
+function goStats(level){
+  statsView = { level, hpId: null, setIndex: null };
+  renderStats();
+}
+
+function fmtMinutes(ms){
+  const mins = Math.round((ms || 0) / 60000);
+  if(mins < 1) return '<1 phút';
+  if(mins < 60) return `${mins} phút`;
+  return `${Math.floor(mins/60)}g${String(mins%60).padStart(2,'0')}`;
+}
+
+function computeGlobalStats(){
   const hpStatsList = HP_LIST.map(computeHpStats);
   const totalQ = hpStatsList.reduce((a, s) => a + s.totalQuestions, 0);
   const totalMastered = hpStatsList.reduce((a, s) => a + s.masteredCount, 0);
+  const totalWrongNow = hpStatsList.reduce((a, s) => a + s.wrongCount, 0);
   const totalSets = hpStatsList.reduce((a, s) => a + s.totalSets, 0);
   const totalAttempted = hpStatsList.reduce((a, s) => a + s.attemptedSets, 0);
   const overallPct = totalQ ? Math.round(totalMastered / totalQ * 100) : 0;
+  const activity = loadActivity();
+  const today = todayStr();
+  const todayData = activity.byDate[today] || { answered:0, correct:0, wrong:0, timeMs:0 };
+  const accuracyPct = activity.totalAnswered ? Math.round(activity.totalCorrect / activity.totalAnswered * 100) : 0;
+  const last7 = [];
+  for(let i = 6; i >= 0; i--){
+    const ds = dateStrFromOffset(i);
+    const d = activity.byDate[ds] || { answered:0, correct:0, wrong:0, timeMs:0 };
+    last7.push(Object.assign({ date: ds }, d));
+  }
+  return { hpStatsList, totalQ, totalMastered, totalWrongNow, totalSets, totalAttempted, overallPct,
+    activity, todayData, accuracyPct, streak: liveStreak(activity), last7 };
+}
+
+/* ---------- Tổng quan: 5 thẻ, chạm vào để xem chi tiết ---------- */
+function renderStatsOverview(container){
+  const g = computeGlobalStats();
+  const arrow = `<svg class="ov-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>`;
 
   container.innerHTML = `
     <div class="home-hero">
       <div class="eyebrow">TỔNG QUAN</div>
       <h1>Thống Kê Ôn Tập</h1>
-      <p>Tiến độ và mức độ thuộc bài trên toàn bộ học phần.</p>
+      <p>Chạm vào từng thẻ để xem chi tiết.</p>
     </div>
+    <div class="ov-grid">
+      <div class="ov-card ov-wide" id="ov-performance">
+        <div class="ov-top"><span class="ov-icon">📊</span>${arrow}</div>
+        <div class="ov-value">${g.activity.totalAnswered.toLocaleString('vi-VN')} câu</div>
+        <div class="ov-label">Đã làm · Độ chính xác ${g.accuracyPct}%</div>
+        <div class="ov-sub">Đúng ${g.activity.totalCorrect.toLocaleString('vi-VN')} · Sai ${g.activity.totalWrong.toLocaleString('vi-VN')}</div>
+      </div>
+      <div class="ov-card" id="ov-today">
+        <div class="ov-top"><span class="ov-icon">📅</span>${arrow}</div>
+        <div class="ov-value">${g.todayData.answered}</div>
+        <div class="ov-label">Hôm nay</div>
+        <div class="ov-sub">${g.todayData.answered ? `Đúng ${g.todayData.correct} · Sai ${g.todayData.wrong} · ${fmtMinutes(g.todayData.timeMs)}` : 'Chưa làm câu nào'}</div>
+      </div>
+      <div class="ov-card ov-accent-amber" id="ov-streak">
+        <div class="ov-top"><span class="ov-icon">🔥</span>${arrow}</div>
+        <div class="ov-value">${g.streak} ngày</div>
+        <div class="ov-label">Chuỗi học</div>
+        <div class="ov-sub">Kỷ lục ${g.activity.streakBest} ngày</div>
+      </div>
+      <div class="ov-card ${g.totalWrongNow > 0 ? 'ov-accent-red' : 'ov-accent-green'}" id="ov-wrong">
+        <div class="ov-top"><span class="ov-icon">${g.totalWrongNow > 0 ? '🔴' : '🎉'}</span>${arrow}</div>
+        <div class="ov-value">${g.totalWrongNow}</div>
+        <div class="ov-label">Câu cần ôn</div>
+        <div class="ov-sub">${g.totalWrongNow > 0 ? 'Chạm để ôn ngay' : 'Không có câu nào đang sai'}</div>
+      </div>
+      <div class="ov-card ov-wide" id="ov-hplist">
+        <div class="ov-top"><span class="ov-icon">🎯</span>${arrow}</div>
+        <div class="ov-value">${g.totalMastered}/${g.totalQ} <span style="font-size:14px; font-weight:700; color:var(--text-dim);">(${g.overallPct}%)</span></div>
+        <div class="ov-label">Tiến độ thuộc bài · ${g.totalAttempted}/${g.totalSets} đề đã làm</div>
+        ${g.hpStatsList.map(s => `<div class="ov-mini-hp"><span class="ov-mini-name">${escapeHtml(s.hp.name)}</span><span class="ov-mini-pct">${s.masteredPct}%</span></div>`).join('')}
+      </div>
+    </div>
+  `;
+
+  document.getElementById('ov-performance').addEventListener('click', () => goStats('performance'));
+  document.getElementById('ov-today').addEventListener('click', () => goStats('performance'));
+  document.getElementById('ov-streak').addEventListener('click', () => goStats('streak'));
+  document.getElementById('ov-wrong').addEventListener('click', () => goStats('wrong'));
+  document.getElementById('ov-hplist').addEventListener('click', () => goStats('hp-list'));
+}
+
+/* ---------- Chi tiết: Hiệu suất (câu 1 & 2 trong tổng quan) ---------- */
+function renderStatsPerformance(container){
+  const g = computeGlobalStats();
+  container.innerHTML = `
+    ${statsTopbar('Hiệu suất', true)}
     <div class="stats-summary-row">
-      <div class="stat-chip"><div class="num">${totalMastered}/${totalQ}</div><div class="label">Câu đã thuộc</div></div>
-      <div class="stat-chip"><div class="num">${overallPct}%</div><div class="label">Tỉ lệ thuộc</div></div>
-      <div class="stat-chip"><div class="num">${totalAttempted}/${totalSets}</div><div class="label">Đề đã làm</div></div>
+      <div class="stat-chip"><div class="num">${g.activity.totalAnswered.toLocaleString('vi-VN')}</div><div class="label">Tổng câu đã làm</div></div>
+      <div class="stat-chip"><div class="num">${g.accuracyPct}%</div><div class="label">Độ chính xác</div></div>
+      <div class="stat-chip"><div class="num">${g.activity.sessionCount}</div><div class="label">Phiên học</div></div>
     </div>
-    <div class="stats-section-title">Theo học phần</div>
+    <div class="stats-section-title">7 ngày gần nhất</div>
+    <div class="chart-wrap"><div class="chart-bars" id="chart-bars"></div></div>
+    <div class="stats-section-title">Lịch sử theo ngày</div>
+    <div id="history-list"></div>
+  `;
+  document.getElementById('stats-back').addEventListener('click', () => goStats('overview'));
+
+  const maxAnswered = Math.max(1, ...g.last7.map(d => d.answered));
+  const bars = document.getElementById('chart-bars');
+  g.last7.forEach(d => {
+    const heightPct = Math.round(d.answered / maxAnswered * 100);
+    const [, m, dd] = d.date.split('-');
+    const bar = document.createElement('div');
+    bar.className = 'chart-bar';
+    bar.innerHTML = `
+      <div class="cb-val">${d.answered || ''}</div>
+      <div class="cb-track"><div class="cb-fill" style="height:${d.answered ? Math.max(heightPct,6) : 0}%"></div></div>
+      <div class="cb-day">${dd}/${m}</div>
+    `;
+    bars.appendChild(bar);
+  });
+
+  const historyList = document.getElementById('history-list');
+  const historyDays = Object.keys(g.activity.byDate).sort().reverse().slice(0, 14);
+  if(historyDays.length === 0){
+    historyList.innerHTML = `<div class="stats-empty">Chưa có lịch sử luyện tập.</div>`;
+  } else {
+    historyDays.forEach(ds => {
+      const d = g.activity.byDate[ds];
+      const pct = d.answered ? Math.round(d.correct/d.answered*100) : 0;
+      const [, m, dd] = ds.split('-');
+      const row = document.createElement('div');
+      row.className = 'history-row';
+      row.innerHTML = `
+        <div><div class="hr-date">${dd}/${m}</div><div class="hr-sub">${d.answered} câu · ${fmtMinutes(d.timeMs)}</div></div>
+        <div class="hr-pct">${pct}%</div>
+      `;
+      historyList.appendChild(row);
+    });
+  }
+}
+
+/* ---------- Chi tiết: Chuỗi học ---------- */
+function renderStatsStreak(container){
+  const g = computeGlobalStats();
+  container.innerHTML = `
+    ${statsTopbar('Chuỗi học', true)}
+    <div class="stats-summary-row">
+      <div class="stat-chip"><div class="num">🔥 ${g.streak}</div><div class="label">Ngày liên tiếp</div></div>
+      <div class="stat-chip"><div class="num">${g.activity.streakBest}</div><div class="label">Kỷ lục</div></div>
+    </div>
+    <div class="stats-section-title">14 ngày gần nhất</div>
+    <div class="streak-dots" id="streak-dots"></div>
+  `;
+  document.getElementById('stats-back').addEventListener('click', () => goStats('overview'));
+
+  const dots = document.getElementById('streak-dots');
+  for(let i = 13; i >= 0; i--){
+    const ds = dateStrFromOffset(i);
+    const d = g.activity.byDate[ds];
+    const [, m, dd] = ds.split('-');
+    const dot = document.createElement('div');
+    dot.className = 'streak-dot' + (d && d.answered > 0 ? ' active' : '');
+    dot.textContent = `${dd}/${m}`;
+    dots.appendChild(dot);
+  }
+}
+
+/* ---------- Chi tiết: Câu cần ôn ---------- */
+function renderStatsWrong(container){
+  const g = computeGlobalStats();
+  container.innerHTML = `
+    ${statsTopbar('Câu cần ôn', true)}
+    <div id="wrong-list"></div>
+  `;
+  document.getElementById('stats-back').addEventListener('click', () => goStats('overview'));
+
+  const list = document.getElementById('wrong-list');
+  const hpsWithWrong = g.hpStatsList.filter(s => s.wrongCount > 0);
+  if(hpsWithWrong.length === 0){
+    list.innerHTML = `<div class="wrong-review-card ok" style="margin:14px 16px 4px;"><div class="wrc-title">🎉 Không có câu nào đang sai</div></div>`;
+    return;
+  }
+  hpsWithWrong.forEach(s => {
+    const card = document.createElement('div');
+    card.className = 'wrong-review-card';
+    card.style.margin = '14px 16px 4px';
+    card.innerHTML = `
+      <div>
+        <div class="wrc-title">🔴 ${escapeHtml(s.hp.name)} · ${s.wrongCount} câu sai</div>
+        <div class="wrc-desc">Gom lại từ tất cả các đề, luyện tập riêng cho đến khi thuộc.</div>
+      </div>
+      <button class="btn btn-primary">Ôn ngay</button>
+    `;
+    card.querySelector('button').addEventListener('click', () => startReviewSession(s.hp));
+    list.appendChild(card);
+  });
+}
+
+/* ---------- Chi tiết: Theo học phần (danh sách) ---------- */
+function renderStatsHpList(container){
+  const hpStatsList = HP_LIST.map(computeHpStats);
+  container.innerHTML = `
+    ${statsTopbar('Theo học phần', true)}
     <div id="stats-hp-list"></div>
   `;
+  document.getElementById('stats-back').addEventListener('click', () => goStats('overview'));
 
   const list = document.getElementById('stats-hp-list');
   if(hpStatsList.length === 0){
@@ -1812,7 +2114,7 @@ function renderStatsOverview(container){
 
 function renderStatsHp(container){
   const hp = HP_LIST.find(h => h.id === statsView.hpId);
-  if(!hp){ statsView = { level: 'overview', hpId: null, setIndex: null }; return renderStats(); }
+  if(!hp) return goStats('hp-list');
   const s = computeHpStats(hp);
 
   container.innerHTML = `
@@ -1837,7 +2139,7 @@ function renderStatsHp(container){
     <div id="stats-set-list"></div>
   `;
   document.getElementById('stats-back').addEventListener('click', () => {
-    statsView = { level: 'overview', hpId: null, setIndex: null };
+    statsView = { level: 'hp-list', hpId: null, setIndex: null };
     renderStats();
   });
   const reviewBtn = document.getElementById('stats-review-btn');
@@ -1867,7 +2169,7 @@ function renderStatsHp(container){
 
 function renderStatsSet(container){
   const hp = HP_LIST.find(h => h.id === statsView.hpId);
-  if(!hp){ statsView = { level: 'overview', hpId: null, setIndex: null }; return renderStats(); }
+  if(!hp) return goStats('hp-list');
   const setIndex = statsView.setIndex;
   const results = loadResultsFor(hp.id);
   const r = results[setIndex];
