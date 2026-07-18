@@ -1421,7 +1421,10 @@ document.getElementById('answer-modal-next').addEventListener('click', () => {
   advanceQuestion();
 });
 document.getElementById('answer-modal').addEventListener('click', (e) => {
-  if(e.target.id === 'answer-modal') closeAnswerPopup();
+  if(e.target.id === 'answer-modal'){
+    closeAnswerPopup();
+    advanceQuestion();
+  }
 });
 
 function advanceQuestion(){
