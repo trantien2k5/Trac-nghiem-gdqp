@@ -1106,6 +1106,7 @@ let slotIsPriority = [];     // slot -> shown early because it was wrong on the 
 let firstAnswers = [];       // original index -> answer given on first attempt (used for scoring)
 let mastered = [];           // original index -> answered correctly at least once (practice mode)
 let appearCount = [];        // original index -> how many times shown (practice mode, caps repeats)
+let liveMasteryStreak = [];  // original index -> streak trả lời đúng liên tiếp (0..MASTERY_CAP), cập nhật ngay trong phiên, để hiện % đã thuộc theo từng câu
 const MAX_APPEARANCES = 4;   // safety cap so a missed question doesn't repeat forever
 const REPEAT_GAP = 3;        // show a missed question again a few cards later, not immediately
 const MASTERY_CAP = 3;       // correct-streak (across practice sessions) needed to stop being prioritized
@@ -1297,17 +1298,15 @@ function startQuiz(setIndex, mode){
   currentIndex = 0;
   qOrder = currentQuestions.map((_, i) => i);
   slotIsPriority = new Array(qOrder.length).fill(false);
-  if(currentMode === 'practice'){
-    const prevResult = loadResults()[setIndex];
-    const masteryMap = (prevResult && prevResult.mastery) || {};
-    if(Object.keys(masteryMap).length > 0){
-      // Ít thuộc nhất (streak trả lời đúng liên tiếp thấp) lên đầu, thuộc kỹ rồi ra cuối.
-      // Streak được chặn ở MASTERY_CAP để câu từng sai không bị "phạt" mãi mãi sau khi đã ôn vững.
-      const masteryKey = (i) => Math.min(masteryMap[i] || 0, MASTERY_CAP);
-      qOrder = qOrder.slice().sort((a, b) => masteryKey(a) - masteryKey(b));
-      for(let p = 0; p < qOrder.length; p++){
-        slotIsPriority[p] = masteryKey(qOrder[p]) === 0;
-      }
+  const prevResult = loadResults()[setIndex];
+  const masteryMap = (prevResult && prevResult.mastery) || {};
+  if(currentMode === 'practice' && Object.keys(masteryMap).length > 0){
+    // Ít thuộc nhất (streak trả lời đúng liên tiếp thấp) lên đầu, thuộc kỹ rồi ra cuối.
+    // Streak được chặn ở MASTERY_CAP để câu từng sai không bị "phạt" mãi mãi sau khi đã ôn vững.
+    const masteryKey = (i) => Math.min(masteryMap[i] || 0, MASTERY_CAP);
+    qOrder = qOrder.slice().sort((a, b) => masteryKey(a) - masteryKey(b));
+    for(let p = 0; p < qOrder.length; p++){
+      slotIsPriority[p] = masteryKey(qOrder[p]) === 0;
     }
   }
   slotAnswers = new Array(qOrder.length).fill(null);
@@ -1315,6 +1314,7 @@ function startQuiz(setIndex, mode){
   firstAnswers = new Array(currentQuestions.length).fill(null);
   mastered = new Array(currentQuestions.length).fill(false);
   appearCount = new Array(currentQuestions.length).fill(0);
+  liveMasteryStreak = currentQuestions.map((_, i) => Math.min(masteryMap[i] || 0, MASTERY_CAP));
   flagged = new Array(currentQuestions.length).fill(false);
   timeUp = false;
   quizStartTime = Date.now();
@@ -1381,6 +1381,7 @@ function startReviewSession(hp){
   firstAnswers = new Array(currentQuestions.length).fill(null);
   mastered = new Array(currentQuestions.length).fill(false);
   appearCount = new Array(currentQuestions.length).fill(0);
+  liveMasteryStreak = new Array(currentQuestions.length).fill(0); // mọi câu ở đây đều đang ở streak 0 (đang sai)
   flagged = new Array(currentQuestions.length).fill(false);
   timeUp = false;
   quizStartTime = Date.now();
@@ -1509,10 +1510,11 @@ function renderQuestion(){
     document.getElementById('mastery-pct').textContent = `${qPct}% đã thuộc`;
     document.getElementById('progress-fill').style.width = `${Math.round((currentIndex/qOrder.length)*100)}%`;
   } else {
-    const masteredCount = mastered.filter(Boolean).length;
-    const masteredPct = currentQuestions.length ? Math.round(masteredCount/currentQuestions.length*100) : 0;
-    document.getElementById('mastery-pct').textContent = `${masteredPct}% đã thuộc`;
-    document.getElementById('progress-fill').style.width = `${masteredPct}%`;
+    // % đã thuộc là của riêng câu đang xem (streak đúng liên tiếp/MASTERY_CAP), không phải tiến độ cả phiên.
+    const streak = liveMasteryStreak[qIdx] || 0;
+    const qPct = Math.round(streak / MASTERY_CAP * 100);
+    document.getElementById('mastery-pct').textContent = `${qPct}% đã thuộc`;
+    document.getElementById('progress-fill').style.width = `${Math.round((currentIndex/qOrder.length)*100)}%`;
   }
   let qTag = '';
   if(!isExam && slotIsRepeat[currentIndex]) qTag = ' · Ôn lại';
@@ -1636,6 +1638,9 @@ function selectAnswer(optText){
   const isCorrect = optText === item.answer;
   if(isFirstAttempt) logAnswer(isCorrect);
   if(isFirstAttempt && adaptiveSessionActive) applyAdaptiveUpdate(currentHp.id, item._adaptiveId, isCorrect);
+  if(isFirstAttempt && !adaptiveSessionActive){
+    liveMasteryStreak[qIdx] = isCorrect ? Math.min(MASTERY_CAP, (liveMasteryStreak[qIdx] || 0) + 1) : 0;
+  }
   if(isCorrect){
     mastered[qIdx] = true;
   } else {
