@@ -324,11 +324,6 @@
   .option .mark{ flex-shrink:0; width:20px; height:20px; margin-top:2px; }
 
   .option.selected-pending{ border-color: var(--indigo); background: var(--indigo-glow); }
-  .option.correct-reveal{ border-color: var(--green); background: var(--green-bg); }
-  .option.correct-reveal .letter{ background: var(--green); border-color: var(--green); color: #06281C; }
-  .option.wrong-reveal{ border-color: var(--red); background: var(--red-bg); }
-  .option.wrong-reveal .letter{ background: var(--red); border-color: var(--red); color: #340B0B; }
-  .option.dim{ opacity: 0.5; }
 
   .explain-box{
     margin: 10px 16px 0;
@@ -639,8 +634,6 @@
     </div>
 
     <div class="options" id="options-container"></div>
-
-    <div class="explain-box hidden" id="explain-box"><span class="explain-icon">💡</span><span><span class="explain-label" id="explain-label">Mẹo:</span><span id="explain-text"></span></span></div>
 
     <div class="quiz-nav" id="quiz-nav">
       <button class="btn btn-ghost" id="btn-prev">Trước</button>
@@ -1231,11 +1224,6 @@ function renderQuestion(){
   const alreadyAnswered = slotAnswers[currentIndex] !== null;
 
   item.options.forEach((optText, i) => {
-    if(!isExam && alreadyAnswered){
-      const selected = slotAnswers[currentIndex];
-      const isRelevant = optText === item.answer || optText === selected;
-      if(!isRelevant) return; // only show the correct answer + the one you picked
-    }
     const opt = document.createElement('div');
     opt.className = 'option';
     opt.innerHTML = `
@@ -1250,29 +1238,13 @@ function renderQuestion(){
       }
       opt.addEventListener('click', () => selectAnswer(optText));
     } else if(alreadyAnswered){
-      applyRevealStyles(opt, optText, item, slotAnswers[currentIndex]);
+      // Luyện tập: đúng/sai + giải thích đã hiện trong popup, thẻ câu hỏi giữ nguyên trạng thái trung tính.
+      if(optText === slotAnswers[currentIndex]) opt.classList.add('selected-pending');
     } else {
       opt.addEventListener('click', () => selectAnswer(optText));
     }
     container.appendChild(opt);
   });
-
-  const explainBox = document.getElementById('explain-box');
-  if(!isExam && alreadyAnswered){
-    const isCorrect = slotAnswers[currentIndex] === item.answer;
-    const tip = isCorrect ? item.explain : (item.wrongTip || item.explain);
-    const tipLabel = isCorrect ? 'Mẹo:' : 'Vì sao sai:';
-    if(tip){
-      document.getElementById('explain-label').textContent = tipLabel;
-      document.getElementById('explain-text').textContent = tip;
-      explainBox.classList.remove('hidden');
-      explainBox.classList.toggle('wrong-tip', !isCorrect);
-    } else {
-      explainBox.classList.add('hidden');
-    }
-  } else {
-    explainBox.classList.add('hidden');
-  }
 
   const nextBtn = document.getElementById('btn-next');
   nextBtn.disabled = isExam ? false : !alreadyAnswered;
@@ -1298,19 +1270,6 @@ function toggleFlag(){
   renderQuestion();
 }
 document.getElementById('flag-btn').addEventListener('click', toggleFlag);
-
-function applyRevealStyles(opt, optText, item, selected){
-  const mark = opt.querySelector('.mark');
-  if(optText === item.answer){
-    opt.classList.add('correct-reveal');
-    mark.innerHTML = checkIcon();
-  } else if(optText === selected){
-    opt.classList.add('wrong-reveal');
-    mark.innerHTML = xIcon();
-  } else {
-    opt.classList.add('dim');
-  }
-}
 
 function checkIcon(){
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--green)"><path d="M20 6L9 17l-5-5"/></svg>`;
