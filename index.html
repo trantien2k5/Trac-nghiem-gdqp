@@ -1342,6 +1342,10 @@ function selectAnswer(optText){
   }
 }
 
+let popupLocked = false;
+let popupUnlockTimer = null;
+const WRONG_POPUP_LOCK_MS = 3000;
+
 function showAnswerPopup(isCorrect, item){
   const icon = document.getElementById('answer-modal-icon');
   icon.className = 'answer-modal-icon ' + (isCorrect ? 'ok' : 'bad');
@@ -1370,16 +1374,34 @@ function showAnswerPopup(isCorrect, item){
     explainBox.classList.add('hidden');
   }
 
+  const nextBtn = document.getElementById('answer-modal-next');
+  if(popupUnlockTimer){ clearTimeout(popupUnlockTimer); popupUnlockTimer = null; }
+  if(isCorrect){
+    popupLocked = false;
+    nextBtn.classList.remove('hidden');
+  } else {
+    // Sai: ẩn nút Tiếp tục vài giây để buộc đọc giải thích trước khi qua câu.
+    popupLocked = true;
+    nextBtn.classList.add('hidden');
+    popupUnlockTimer = setTimeout(() => {
+      popupLocked = false;
+      nextBtn.classList.remove('hidden');
+      popupUnlockTimer = null;
+    }, WRONG_POPUP_LOCK_MS);
+  }
+
   document.getElementById('answer-modal').classList.remove('hidden');
 }
 function closeAnswerPopup(){
   document.getElementById('answer-modal').classList.add('hidden');
 }
 document.getElementById('answer-modal-next').addEventListener('click', () => {
+  if(popupLocked) return;
   closeAnswerPopup();
   advanceQuestion();
 });
 document.getElementById('answer-modal').addEventListener('click', (e) => {
+  if(popupLocked) return;
   if(e.target.id === 'answer-modal'){
     closeAnswerPopup();
     advanceQuestion();
