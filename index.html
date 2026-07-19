@@ -1128,7 +1128,23 @@ function pickAdaptiveQuestions(hp){
   let pickedCount = order.reduce((a, g) => a + picked[g].length, 0);
 
   if(pickedCount < target){
-    for(const g of ['wrong', 'shaky', 'new', 'mastered']){
+    // Bù chỗ thiếu (thường do nhóm "chưa làm" đã hết sạch — học hết cả học phần rồi, đang ở giai
+    // đoạn củng cố): xen kẽ đều giữa "hay sai" và "chưa chắc" thay vì dồn hết cho 1 nhóm trước, để
+    // nhóm "chưa chắc" (thường đông nhất khi đã học hết) không bị nghẽn, giúp lên "đã thuộc" nhanh hơn.
+    let any = true;
+    while(pickedCount < target && any){
+      any = false;
+      for(const g of ['wrong', 'shaky']){
+        if(pickedCount >= target) break;
+        if(picked[g].length < groups[g].length){
+          picked[g].push(groups[g][picked[g].length]);
+          pickedCount++;
+          any = true;
+        }
+      }
+    }
+    // Hiếm khi cả 2 nhóm trên cũng cạn (gần như mọi câu đã thuộc) mới cần lấy thêm new/mastered.
+    for(const g of ['new', 'mastered']){
       if(pickedCount >= target) break;
       const extra = groups[g].slice(picked[g].length, picked[g].length + (target - pickedCount));
       picked[g] = picked[g].concat(extra);
