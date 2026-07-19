@@ -2228,7 +2228,7 @@ function renderStatsOverview(container){
         <div class="ov-label">Chuỗi học</div>
         <div class="ov-sub">Kỷ lục ${g.activity.streakBest} ngày</div>
       </div>
-      <div class="ov-card ${g.totalWrongNow > 0 ? 'ov-accent-red' : 'ov-accent-green'}" id="ov-wrong">
+      <div class="ov-card ov-wide ${g.totalWrongNow > 0 ? 'ov-accent-red' : 'ov-accent-green'}" id="ov-wrong">
         <div class="ov-top"><span class="ov-icon">${g.totalWrongNow > 0 ? '🔴' : '🎉'}</span>${arrow}</div>
         <div class="ov-value">${g.totalWrongNow}</div>
         <div class="ov-label">Câu cần ôn</div>
