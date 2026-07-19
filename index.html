@@ -1166,8 +1166,10 @@ let slotIsPriority = [];     // slot -> shown early because it was wrong on the 
 let firstAnswers = [];       // original index -> answer given on first attempt (used for scoring)
 let mastered = [];           // original index -> answered correctly at least once (practice mode)
 let appearCount = [];        // original index -> how many times shown (practice mode, caps repeats)
+let sessionQueueCap = Infinity; // trần tổng số câu hiện ra trong 1 phiên (kể cả gặp lại), tránh phiên "phình to" quá mệt
 const MAX_APPEARANCES = 4;   // safety cap so a missed question doesn't repeat forever
 const REPEAT_GAP = 3;        // show a missed question again a few cards later, not immediately
+const SESSION_GROWTH_MULT = 1.5; // qOrder được phép dài tối đa gấp bấy nhiêu lần số câu chọn ban đầu
 let currentMode = 'practice'; // 'practice' | 'exam'
 let pendingSetIndex = null;
 let flagged = [];            // array of booleans, exam mode
@@ -1362,6 +1364,7 @@ function startQuiz(setIndex, mode){
   }));
   currentIndex = 0;
   qOrder = currentQuestions.map((_, i) => i);
+  sessionQueueCap = Math.ceil(qOrder.length * SESSION_GROWTH_MULT);
   slotIsPriority = new Array(qOrder.length).fill(false);
   if(currentMode === 'practice'){
     // Câu chưa thuộc/hay sai lên đầu, đã thuộc ra cuối — dựa trên kho độ thuộc dùng chung
@@ -1435,6 +1438,7 @@ function startReviewSession(hp){
   }));
   currentIndex = 0;
   qOrder = currentQuestions.map((_, i) => i);
+  sessionQueueCap = Math.ceil(qOrder.length * SESSION_GROWTH_MULT);
   slotIsPriority = new Array(qOrder.length).fill(true); // toàn bộ danh sách này vốn đã là "cần ôn"
   slotAnswers = new Array(qOrder.length).fill(null);
   slotIsRepeat = new Array(qOrder.length).fill(false);
@@ -1480,6 +1484,7 @@ function startAdaptiveSession(hp){
   adaptiveGroupOfQ = currentQuestions.map(item => adaptiveGroup(adaptiveStatFor(data, item._qid)));
   currentIndex = 0;
   qOrder = currentQuestions.map((_, i) => i);
+  sessionQueueCap = Math.ceil(qOrder.length * SESSION_GROWTH_MULT);
   slotIsPriority = new Array(qOrder.length).fill(false); // adaptive dùng nhãn nhóm riêng, không dùng cờ ưu tiên chung
   slotAnswers = new Array(qOrder.length).fill(null);
   slotIsRepeat = new Array(qOrder.length).fill(false);
@@ -1547,6 +1552,7 @@ function renderDots(){
 
 function scheduleRepeat(qIdx, gap){
   if(appearCount[qIdx] >= MAX_APPEARANCES) return; // stop repeating; question stays marked as needing review
+  if(qOrder.length >= sessionQueueCap) return; // phiên đã đủ dài — câu vẫn giữ trạng thái "cần ôn" cho lần sau, không nhồi thêm cho mệt
   const insertPos = Math.min(currentIndex + 1 + (gap === undefined ? REPEAT_GAP : gap), qOrder.length);
   qOrder.splice(insertPos, 0, qIdx);
   slotAnswers.splice(insertPos, 0, null);
