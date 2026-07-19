@@ -92,7 +92,7 @@
     font-size: 14px; color: var(--text-dim); margin:0; line-height:1.5;
   }
   .stats-row{
-    display:flex; gap:10px; padding: 18px 20px 4px;
+    display:grid; grid-template-columns: 1fr 1fr; gap:10px; padding: 18px 20px 4px;
   }
   .stat-chip{
     flex:1; background: var(--bg-elev); border:1px solid var(--border); border-radius: var(--radius-sm);
@@ -661,12 +661,24 @@
         <div class="label">Đề đã làm</div>
       </div>
       <div class="stat-chip">
-        <div class="num" id="stat-avg">—</div>
-        <div class="label">Điểm TB</div>
+        <div class="num" id="stat-learned">0/150</div>
+        <div class="label">Câu đã học</div>
+      </div>
+      <div class="stat-chip acc-green">
+        <div class="num" id="stat-mastered">0/150</div>
+        <div class="label">Câu đã thuộc</div>
+      </div>
+      <div class="stat-chip acc-red">
+        <div class="num" id="stat-need-review">0</div>
+        <div class="label">Cần ôn</div>
       </div>
       <div class="stat-chip">
-        <div class="num" id="stat-best">—</div>
-        <div class="label">Điểm cao nhất</div>
+        <div class="num" id="stat-accuracy">—</div>
+        <div class="label">Độ chính xác</div>
+      </div>
+      <div class="stat-chip">
+        <div class="num" id="stat-progress">0%</div>
+        <div class="label">Tiến độ học phần</div>
       </div>
     </div>
     <div class="stats-section-title">Hoặc chọn đề cụ thể</div>
@@ -1189,7 +1201,6 @@ function renderHome(){
 
   let attemptedCount = 0;
   let totalPct = 0;
-  let bestPct = 0;
 
   SETS.forEach((set, idx) => {
     const r = results[idx];
@@ -1204,7 +1215,6 @@ function renderHome(){
       attemptedCount++;
       const pct = Math.round((r.best/r.total)*100);
       totalPct += pct;
-      bestPct = Math.max(bestPct, pct);
       barPct = pct;
       let cls = 'low';
       if(pct >= 80) cls = '';
@@ -1223,8 +1233,14 @@ function renderHome(){
   });
 
   document.getElementById('stat-attempted').textContent = `${attemptedCount}/${TOTAL_SETS}`;
-  document.getElementById('stat-avg').textContent = attemptedCount ? Math.round(totalPct/attemptedCount)+'%' : '—';
-  document.getElementById('stat-best').textContent = attemptedCount ? bestPct+'%' : '—';
+
+  const s = computeHpStats(currentHp);
+  const learnedCount = s.masteredCount + s.learningCount + s.wrongCount; // đã từng làm ít nhất 1 lần
+  document.getElementById('stat-learned').textContent = `${learnedCount}/${s.totalQuestions}`;
+  document.getElementById('stat-mastered').textContent = `${s.masteredCount}/${s.totalQuestions}`;
+  document.getElementById('stat-need-review').textContent = s.wrongCount;
+  document.getElementById('stat-accuracy').textContent = attemptedCount ? Math.round(totalPct/attemptedCount)+'%' : '—';
+  document.getElementById('stat-progress').textContent = `${s.masteredPct}%`;
 }
 
 /* =========================================================
