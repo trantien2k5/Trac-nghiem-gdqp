@@ -848,7 +848,7 @@
   <div id="confirm-modal" class="modal-overlay hidden">
     <div class="modal-sheet">
       <div class="modal-title">Thoát đề đang làm?</div>
-      <div class="modal-body">Kết quả của đề này sẽ không được lưu lại.</div>
+      <div class="modal-body">Độ thuộc các câu đã trả lời vẫn được lưu lại — chỉ điểm số của đề này sẽ không được tính do chưa làm xong.</div>
       <div class="modal-actions">
         <button class="btn btn-ghost" id="modal-cancel">Ở lại</button>
         <button class="btn btn-primary" id="modal-confirm">Thoát</button>
@@ -1894,6 +1894,9 @@ document.getElementById('confirm-modal').addEventListener('click', (e) => {
 });
 document.getElementById('modal-confirm').addEventListener('click', () => {
   stopTimer();
+  // Độ thuộc từng câu đã trả lời đã lưu ngay lúc trả lời (applyAdaptiveUpdate) rồi, không cần lưu lại
+  // ở đây — chỉ còn thời gian đã học dở dang là chưa được tính, ghi nốt vào thống kê trước khi thoát.
+  logSessionTime(Date.now() - quizStartTime);
   closeConfirmModal();
   showScreen('home');
   renderHome();
