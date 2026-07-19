@@ -1991,7 +1991,7 @@ function renderReviewList(){
     div.innerHTML = `
       <div class="r-top">
         <div class="r-badge ${isCorrect?'ok':'bad'}">${isCorrect ? checkIcon() : xIcon()}</div>
-        <div class="r-q">Câu ${i+1}. ${escapeHtml(item.q)}</div>
+        <div class="r-q">Câu ${item._adaptiveId || (i+1)}. ${escapeHtml(item.q)}</div>
       </div>
       <div class="r-answer ${isCorrect?'ok-text':'bad-text'}">
         <span class="lbl">Bạn chọn:</span> ${escapeHtml(firstAnswers[i] ?? '(bỏ trống)')}
