@@ -998,15 +998,22 @@ function liveStreak(a){
    DUY NHẤT cho độ thuộc từng câu — được đọc/ghi bởi cả 4 chế độ
    (Luyện tập, Thi thử, Ôn câu sai, Luyện tập thông minh) và tab Thống
    kê, để tiến độ luôn đồng nhất dù học ở chế độ nào.
-   Mỗi câu chỉ lưu: correctCount, wrongCount, streak, lastSeen.
+   Mỗi câu chỉ lưu: correctCount, wrongCount, streak, lastSeen (lần gần
+   nhất xuất hiện, để xoay vòng chọn câu), lastAdvance (lần gần nhất
+   thực sự tiến thêm 1 bước streak, để đếm khoảng cách — tách riêng
+   khỏi lastSeen vì một lần "chạm hụt" không được phép làm mới đồng hồ
+   đếm khoảng cách).
    "Đã thuộc" = đúng liên tiếp đủ ADAPTIVE_MASTERED_STREAK lần — nhưng
-   mỗi lần đúng chỉ được TÍNH vào chuỗi đó nếu cách lần đúng trước ít
-   nhất ADAPTIVE_MIN_GAP câu khác (đếm theo số câu đã trả lời, không
-   phải theo phiên học) — trả lời đúng liền tay lại trong lúc vừa mới
-   thấy câu đó thì không tính là đã ôn lại thật sự.
+   mỗi lần đúng chỉ được TÍNH vào chuỗi đó nếu cách lần đúng trước đủ xa
+   (xem ADAPTIVE_MIN_GAP_STEPS, tăng dần theo từng bước; đếm theo số câu
+   đã trả lời, không phải theo phiên học) — trả lời đúng liền tay lại
+   trong lúc vừa mới thấy câu đó thì không tính là đã ôn lại thật sự.
    ========================================================= */
 const ADAPTIVE_MASTERED_STREAK = 3;   // số lần đúng liên tiếp (đã cách quãng) để coi là "đã thuộc"
-const ADAPTIVE_MIN_GAP = 5;           // tối thiểu bấy nhiêu câu khác xen giữa 2 lần đúng thì mới được tính cộng dồn chuỗi
+// Khoảng cách tối thiểu (số câu khác xen giữa) để 1 lần đúng được cộng dồn vào streak, tăng dần theo
+// từng bước: từ streak 0->1 không cần cách (vừa sai xong, sửa ngay); 1->2 cách >=5 câu; 2->3 (chốt "đã
+// thuộc") cách >=10 câu — càng gần mốc thuộc càng cần cách xa hơn để chắc là nhớ thật, không phải nhớ tạm.
+const ADAPTIVE_MIN_GAP_STEPS = [0, 5, 10];
 const ADAPTIVE_SESSION_SIZE = 30; // chia hết cho 40/30/20/10% nên tỉ lệ chọn câu không lệch vì làm tròn
 const ADAPTIVE_RATIOS = { new: 0.4, wrong: 0.3, shaky: 0.2, mastered: 0.1 };
 const ADAPTIVE_GROUP_LABEL = { new: 'Câu mới', wrong: 'Hay sai', shaky: 'Chưa chắc', mastered: 'Đã thuộc' };
@@ -1020,7 +1027,7 @@ function loadAdaptive(hpId){
 }
 function saveAdaptiveData(hpId, data){ localStorage.setItem(adaptiveKey(hpId), JSON.stringify(data)); }
 function adaptiveStatFor(data, id){
-  return data.q[id] || { correctCount:0, wrongCount:0, streak:0, lastSeen:0 };
+  return data.q[id] || { correctCount:0, wrongCount:0, streak:0, lastSeen:0, lastAdvance:0 };
 }
 // Chưa làm -> chưa từng trả lời. Hay sai -> streak vừa bị reset về 0 (lần gần nhất sai).
 // Chưa chắc -> đang có streak đúng dương nhưng chưa đủ số lần cách quãng để coi là thuộc. Đã thuộc -> đúng liên tiếp đủ số lần, đã cách quãng.
@@ -1034,21 +1041,29 @@ function adaptiveGroup(stat){
 function applyAdaptiveUpdate(hpId, id, isCorrect){
   const data = loadAdaptive(hpId);
   const stat = adaptiveStatFor(data, id);
+  // Số câu KHÁC đã trả lời kể từ lần TIẾN THÊM MỘT BƯỚC gần nhất của câu này (không phải lần nhìn thấy
+  // gần nhất — nếu dùng lần nhìn thấy thì một lần "chưa đủ cách xa" sẽ vô tình reset lại đồng hồ đếm,
+  // khiến câu mãi không lên được "đã thuộc" nếu chẳng may bị chọn lại sớm liên tục).
+  const gapSinceLastAdvance = (data.seq || 0) - (stat.lastAdvance || 0);
   data.seq = (data.seq || 0) + 1;
-  const gapSinceLastSeen = data.seq - (stat.lastSeen || 0);
   if(isCorrect){
     stat.correctCount++;
-    if(stat.streak === 0 || gapSinceLastSeen >= ADAPTIVE_MIN_GAP){
-      // Bắt đầu chuỗi mới, hoặc đã cách đủ xa lần đúng trước -> tính là một lần "ôn lại" thật sự.
+    // Càng gần mốc "đã thuộc" thì càng cần cách quãng xa hơn mới được tính (giống nguyên lý lặp lại
+    // ngắt quãng: khoảng lặp tăng dần theo độ tự tin) — bước đầu (vừa sai xong) luôn tính ngay để còn
+    // sửa sai nhanh, nhưng bước chốt "đã thuộc" đòi hỏi cách xa nhất để chắc là nhớ thật, không phải nhớ tạm.
+    const requiredGap = ADAPTIVE_MIN_GAP_STEPS[Math.min(stat.streak, ADAPTIVE_MIN_GAP_STEPS.length - 1)];
+    if(gapSinceLastAdvance >= requiredGap){
       stat.streak++;
+      stat.lastAdvance = data.seq; // chỉ dời mốc khi thực sự tiến thêm 1 bước
     }
-    // Đúng nhưng quá gần lần đúng trước (chưa đủ ADAPTIVE_MIN_GAP câu xen giữa): vẫn tính correctCount,
-    // nhưng KHÔNG cộng dồn streak — tránh việc bấm đúng liên tục trong 1 lượt bị hiểu nhầm là đã thuộc.
+    // Đúng nhưng chưa cách đủ xa: vẫn tính correctCount, KHÔNG cộng dồn streak và KHÔNG dời mốc —
+    // đồng hồ đếm khoảng cách vẫn tính từ lần tiến bước thật gần nhất, không bị "làm mới" oan.
   } else {
     stat.wrongCount++;
     stat.streak = 0;
+    stat.lastAdvance = data.seq; // sai cũng là một mốc mới — tính lại khoảng cách từ đầu cho chuỗi tiếp theo
   }
-  stat.lastSeen = data.seq;
+  stat.lastSeen = data.seq; // luôn cập nhật — phục vụ xoay vòng chọn câu (ưu tiên câu lâu chưa xuất hiện)
   data.q[id] = stat;
   saveAdaptiveData(hpId, data);
 }
@@ -1078,7 +1093,8 @@ function migrateLegacyMasteryIfNeeded(hp){
         correctCount: oldStreak,
         wrongCount: wasWrong ? 1 : 0,
         streak: oldStreak,
-        lastSeen: 0
+        lastSeen: 0,
+        lastAdvance: 0
       };
     });
   });
