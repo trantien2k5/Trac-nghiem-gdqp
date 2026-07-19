@@ -1684,6 +1684,10 @@ function playWrongSound(){
 
 function selectAnswer(optText){
   const qIdx = qOrder[currentIndex];
+  // Lần đầu bấm vào Ô NÀY (slot) — khác với isFirstAttempt (lần đầu hỏi CÂU này trong cả phiên).
+  // Một câu có thể xuất hiện lại ở slot khác (do trả lời sai, xem scheduleRepeat) — mỗi lần gặp lại
+  // đó vẫn phải được ghi vào kho độ thuộc, nếu không cơ chế "gặp lại sau vài câu" sẽ vô nghĩa.
+  const isFirstClickOnSlot = slotAnswers[currentIndex] === null;
   slotAnswers[currentIndex] = optText;
   const isFirstAttempt = firstAnswers[qIdx] === null;
   if(isFirstAttempt) firstAnswers[qIdx] = optText;
@@ -1691,9 +1695,10 @@ function selectAnswer(optText){
   const item = currentQuestions[qIdx];
   const isCorrect = optText === item.answer;
   if(isFirstAttempt) logAnswer(isCorrect);
-  // Ghi độ thuộc ngay khi trả lời lần đầu, cho mọi chế độ (Luyện tập/Thi thử/Ôn câu sai/Thông minh)
-  // vào cùng 1 kho chung theo id câu — để tiến độ luôn nhất quán dù học ở đâu.
-  if(isFirstAttempt && item._qid) applyAdaptiveUpdate(currentHp.id, item._qid, isCorrect);
+  // Ghi độ thuộc mỗi lần THỰC SỰ gặp lại câu (mỗi slot mới), cho mọi chế độ (Luyện tập/Thi thử/Ôn câu
+  // sai/Thông minh) vào cùng 1 kho chung theo id câu. Chặn theo slot (không phải theo mỗi cú click) để
+  // tránh việc đổi đáp án nhiều lần ở chế độ thi thử bị tính lặp nhiều lần cho cùng 1 lần gặp.
+  if(isFirstClickOnSlot && item._qid) applyAdaptiveUpdate(currentHp.id, item._qid, isCorrect);
   if(isCorrect){
     mastered[qIdx] = true;
   } else {
