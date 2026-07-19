@@ -466,7 +466,14 @@
     color:#fff;
     box-shadow: 0 6px 20px -6px rgba(99,102,241,0.6);
   }
-  .btn-primary:disabled{ opacity:0.35; box-shadow:none; }
+  .btn-primary:disabled{ opacity:0.7; box-shadow:none; cursor:not-allowed; }
+  .btn-spinner{
+    display:inline-block; width:16px; height:16px; flex-shrink:0;
+    border: 2.5px solid rgba(255,255,255,0.35); border-top-color:#fff;
+    border-radius:50%; animation: btn-spin 0.7s linear infinite;
+  }
+  .btn-spinner.hidden{ display:none; }
+  @keyframes btn-spin{ to{ transform: rotate(360deg); } }
   .btn-ghost{
     background: var(--bg-elev-2); color: var(--text); border:1px solid var(--border);
   }
@@ -908,7 +915,10 @@
       <div class="answer-modal-title" id="answer-modal-title">Chính xác!</div>
       <div class="answer-modal-correct hidden" id="answer-modal-correct"></div>
       <div class="explain-box hidden" id="answer-modal-explain"><span class="explain-icon">💡</span><span><span class="explain-label" id="answer-modal-explain-label">Mẹo:</span><span id="answer-modal-explain-text"></span></span></div>
-      <button class="btn btn-primary" id="answer-modal-next" style="width:100%; margin-top:16px;">Tiếp tục</button>
+      <button class="btn btn-primary" id="answer-modal-next" style="width:100%; margin-top:16px;">
+        <span id="answer-modal-next-label">Tiếp tục</span>
+        <span class="btn-spinner hidden" id="answer-modal-next-spinner"></span>
+      </button>
     </div>
   </div>
 
@@ -1818,7 +1828,7 @@ function selectAnswer(optText){
 
 let popupLocked = false;
 let popupUnlockTimer = null;
-const WRONG_POPUP_LOCK_MS = 3000;
+const WRONG_POPUP_LOCK_MS = 2000;
 
 function showAnswerPopup(isCorrect, item){
   const icon = document.getElementById('answer-modal-icon');
@@ -1849,17 +1859,26 @@ function showAnswerPopup(isCorrect, item){
   }
 
   const nextBtn = document.getElementById('answer-modal-next');
+  const nextLabel = document.getElementById('answer-modal-next-label');
+  const nextSpinner = document.getElementById('answer-modal-next-spinner');
+  nextBtn.classList.remove('hidden'); // luôn hiện nút — khi sai thì khoá + hiện vòng tròn load thay vì ẩn hẳn
   if(popupUnlockTimer){ clearTimeout(popupUnlockTimer); popupUnlockTimer = null; }
   if(isCorrect){
     popupLocked = false;
-    nextBtn.classList.remove('hidden');
+    nextBtn.disabled = false;
+    nextSpinner.classList.add('hidden');
+    nextLabel.textContent = 'Tiếp tục';
   } else {
-    // Sai: ẩn nút Tiếp tục vài giây để buộc đọc giải thích trước khi qua câu.
+    // Sai: hiện nút Tiếp tục nhưng khoá + hiện vòng tròn load vài giây, buộc đọc giải thích trước khi qua câu.
     popupLocked = true;
-    nextBtn.classList.add('hidden');
+    nextBtn.disabled = true;
+    nextSpinner.classList.remove('hidden');
+    nextLabel.textContent = 'Đang chờ...';
     popupUnlockTimer = setTimeout(() => {
       popupLocked = false;
-      nextBtn.classList.remove('hidden');
+      nextBtn.disabled = false;
+      nextSpinner.classList.add('hidden');
+      nextLabel.textContent = 'Tiếp tục';
       popupUnlockTimer = null;
     }, WRONG_POPUP_LOCK_MS);
   }
