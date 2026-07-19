@@ -898,6 +898,7 @@ function buildSets(){
 
 function selectHp(hp){
   currentHp = hp;
+  migrateLegacyMasteryIfNeeded(hp);
   QUESTIONS = hp.questions;
   SET_SIZE = hp.setSize;
   TOTAL_SETS = Math.ceil(QUESTIONS.length / SET_SIZE);
@@ -917,15 +918,15 @@ function loadResults(){
     return raw ? JSON.parse(raw) : {};
   }catch(e){ return {}; }
 }
-function saveResult(setIndex, score, total, wrongIndices, mastery){
+function saveResult(setIndex, score, total){
+  // Độ thuộc từng câu giờ nằm trong kho chung (ghi trực tiếp mỗi lần trả lời qua applyAdaptiveUpdate),
+  // ở đây chỉ còn lưu điểm số/số lần làm của cả đề.
   const results = loadResults();
   const prev = results[setIndex];
   results[setIndex] = {
     score, total,
     best: prev ? Math.max(prev.best, score) : score,
-    attempts: prev ? prev.attempts + 1 : 1,
-    wrongIndices: wrongIndices || [],
-    mastery: mastery || {}
+    attempts: prev ? prev.attempts + 1 : 1
   };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(results));
 }
@@ -992,9 +993,12 @@ function liveStreak(a){
 }
 
 /* =========================================================
-   ADAPTIVE QUIZ ("Luyện tập thông minh")
-   Mỗi câu (theo item.id, ổn định trong toàn bộ học phần) chỉ lưu:
-   correctCount, wrongCount, streak, lastSeen, mastery (0-5).
+   KHO ĐỘ THUỘC DÙNG CHUNG (theo id câu, ổn định trong toàn bộ học phần)
+   Ban đầu chỉ phục vụ "Luyện tập thông minh" (Adaptive), nay là NGUỒN
+   DUY NHẤT cho độ thuộc từng câu — được đọc/ghi bởi cả 4 chế độ
+   (Luyện tập, Thi thử, Ôn câu sai, Luyện tập thông minh) và tab Thống
+   kê, để tiến độ luôn đồng nhất dù học ở chế độ nào.
+   Mỗi câu chỉ lưu: correctCount, wrongCount, streak, lastSeen, mastery (0-5).
    ========================================================= */
 const ADAPTIVE_MASTERY_CAP = 5;
 const ADAPTIVE_MASTERED_STREAK = 3;   // streak (đúng liên tiếp) cần để coi là "đã thuộc" khi mastery đã full
@@ -1039,11 +1043,48 @@ function applyAdaptiveUpdate(hpId, id, isCorrect){
   saveAdaptiveData(hpId, data);
 }
 
+// Di chuyển 1 lần dữ liệu độ thuộc cũ (streak 0-3 theo từng đề, lưu trong quiz_<hp>_results_v1
+// từ trước khi có kho chung) sang kho chung này, để không mất tiến độ Luyện tập/Thi thử đã có
+// trước đây. Chỉ chạy 1 lần cho mỗi học phần (đánh dấu qua migratedLegacy) và không ghi đè lên
+// câu nào đã có dữ liệu mới hơn trong kho chung.
+const LEGACY_MASTERY_CAP = 3; // ngưỡng "đã thuộc" của hệ cũ (streak đúng liên tiếp theo đề), chỉ dùng để migrate
+function migrateLegacyMasteryIfNeeded(hp){
+  const data = loadAdaptive(hp.id);
+  if(data.migratedLegacy) return data;
+  const results = loadResultsFor(hp.id);
+  const setSize = hp.setSize;
+  Object.keys(results).forEach(setIndexStr => {
+    const r = results[setIndexStr];
+    if(!r || !r.mastery) return;
+    const start = Number(setIndexStr) * setSize;
+    Object.keys(r.mastery).forEach(localIndexStr => {
+      const localIndex = Number(localIndexStr);
+      const q = hp.questions[start + localIndex];
+      if(!q || data.q[q.id]) return; // không đè lên dữ liệu đã có trong kho chung
+      const oldStreak = r.mastery[localIndex] || 0;
+      const wasWrong = (r.wrongIndices || []).includes(localIndex);
+      // Câu đã đạt ngưỡng "đã thuộc" của hệ cũ phải tiếp tục được coi là đã thuộc ở hệ mới
+      // (mastery đầy + đủ streak), không bị hạ xuống "đang học" chỉ vì thang điểm đổi từ 0-3 sang 0-5.
+      const wasMastered = oldStreak >= LEGACY_MASTERY_CAP;
+      data.q[q.id] = {
+        correctCount: oldStreak,
+        wrongCount: wasWrong ? 1 : 0,
+        streak: wasMastered ? ADAPTIVE_MASTERED_STREAK : oldStreak,
+        lastSeen: 0,
+        mastery: wasMastered ? ADAPTIVE_MASTERY_CAP : oldStreak
+      };
+    });
+  });
+  data.migratedLegacy = true;
+  saveAdaptiveData(hp.id, data);
+  return data;
+}
+
 // Chọn ~ADAPTIVE_SESSION_SIZE câu theo tỉ lệ 40% chưa làm / 30% hay sai / 20% chưa chắc / 10% đã thuộc.
 // Nhóm nào không đủ số lượng thì phần thiếu được bù từ các nhóm khác (ưu tiên hay sai > chưa chắc > chưa làm > đã thuộc),
 // rồi xen kẽ (round-robin) giữa các nhóm để không dồn cục câu mới/câu ôn.
 function pickAdaptiveQuestions(hp){
-  const data = loadAdaptive(hp.id);
+  const data = migrateLegacyMasteryIfNeeded(hp);
   const groups = { new: [], wrong: [], shaky: [], mastered: [] };
   hp.questions.forEach((q, idx) => {
     const stat = adaptiveStatFor(data, q.id);
@@ -1118,10 +1159,8 @@ let slotIsPriority = [];     // slot -> shown early because it was wrong on the 
 let firstAnswers = [];       // original index -> answer given on first attempt (used for scoring)
 let mastered = [];           // original index -> answered correctly at least once (practice mode)
 let appearCount = [];        // original index -> how many times shown (practice mode, caps repeats)
-let liveMasteryStreak = [];  // original index -> streak trả lời đúng liên tiếp (0..MASTERY_CAP), cập nhật ngay trong phiên, để hiện % đã thuộc theo từng câu
 const MAX_APPEARANCES = 4;   // safety cap so a missed question doesn't repeat forever
 const REPEAT_GAP = 3;        // show a missed question again a few cards later, not immediately
-const MASTERY_CAP = 3;       // correct-streak (across practice sessions) needed to stop being prioritized
 let currentMode = 'practice'; // 'practice' | 'exam'
 let pendingSetIndex = null;
 let flagged = [];            // array of booleans, exam mode
@@ -1298,6 +1337,8 @@ function setupQuizUiForMode(mode){
   }
 }
 
+const ADAPTIVE_GROUP_SORT_RANK = { wrong: 0, new: 1, shaky: 2, mastered: 3 };
+
 function startQuiz(setIndex, mode){
   reviewSessionActive = false;
   adaptiveSessionActive = false;
@@ -1309,20 +1350,25 @@ function startQuiz(setIndex, mode){
     answer: q.answer,
     options: shuffle(q.options),
     explain: q.explain,
-    wrongTip: q.wrongTip
+    wrongTip: q.wrongTip,
+    _qid: q.id
   }));
   currentIndex = 0;
   qOrder = currentQuestions.map((_, i) => i);
   slotIsPriority = new Array(qOrder.length).fill(false);
-  const prevResult = loadResults()[setIndex];
-  const masteryMap = (prevResult && prevResult.mastery) || {};
-  if(currentMode === 'practice' && Object.keys(masteryMap).length > 0){
-    // Ít thuộc nhất (streak trả lời đúng liên tiếp thấp) lên đầu, thuộc kỹ rồi ra cuối.
-    // Streak được chặn ở MASTERY_CAP để câu từng sai không bị "phạt" mãi mãi sau khi đã ôn vững.
-    const masteryKey = (i) => Math.min(masteryMap[i] || 0, MASTERY_CAP);
-    qOrder = qOrder.slice().sort((a, b) => masteryKey(a) - masteryKey(b));
+  if(currentMode === 'practice'){
+    // Câu chưa thuộc/hay sai lên đầu, đã thuộc ra cuối — dựa trên kho độ thuộc dùng chung
+    // (đồng nhất với Luyện tập thông minh/Ôn câu sai/Thống kê, không riêng gì đề này nữa).
+    const masteryData = migrateLegacyMasteryIfNeeded(currentHp);
+    const groupOf = (i) => adaptiveGroup(adaptiveStatFor(masteryData, currentQuestions[i]._qid));
+    const sortKey = (i) => {
+      const stat = adaptiveStatFor(masteryData, currentQuestions[i]._qid);
+      return ADAPTIVE_GROUP_SORT_RANK[adaptiveGroup(stat)] * 10 + stat.mastery;
+    };
+    qOrder = qOrder.slice().sort((a, b) => sortKey(a) - sortKey(b));
     for(let p = 0; p < qOrder.length; p++){
-      slotIsPriority[p] = masteryKey(qOrder[p]) === 0;
+      const g = groupOf(qOrder[p]);
+      slotIsPriority[p] = (g === 'wrong' || g === 'new');
     }
   }
   slotAnswers = new Array(qOrder.length).fill(null);
@@ -1330,7 +1376,6 @@ function startQuiz(setIndex, mode){
   firstAnswers = new Array(currentQuestions.length).fill(null);
   mastered = new Array(currentQuestions.length).fill(false);
   appearCount = new Array(currentQuestions.length).fill(0);
-  liveMasteryStreak = currentQuestions.map((_, i) => Math.min(masteryMap[i] || 0, MASTERY_CAP));
   flagged = new Array(currentQuestions.length).fill(false);
   timeUp = false;
   quizStartTime = Date.now();
@@ -1350,23 +1395,15 @@ function startQuiz(setIndex, mode){
 }
 
 function collectWrongQuestions(hp){
-  const results = loadResultsFor(hp.id);
-  const setSize = hp.setSize;
-  const totalSets = Math.ceil(hp.questions.length / setSize);
+  // Gom theo kho độ thuộc dùng chung (không cần đề đó đã "làm" theo nghĩa cũ —
+  // câu chỉ sai riêng trong Luyện tập thông minh cũng được gom vào đây).
+  const masteryData = migrateLegacyMasteryIfNeeded(hp);
   const list = [];
-  for(let s = 0; s < totalSets; s++){
-    const r = results[s];
-    if(!r) continue;
-    const start = s * setSize;
-    const end = Math.min(start + setSize, hp.questions.length);
-    for(let i = 0; i < end - start; i++){
-      if(questionState(r.mastery, r.wrongIndices, i) === 'wrong'){
-        const q = hp.questions[start + i];
-        list.push({ q: q.q, answer: q.answer, options: q.options, explain: q.explain, wrongTip: q.wrongTip,
-          _origin: { hpId: hp.id, setIndex: s, localIndex: i } });
-      }
+  hp.questions.forEach(q => {
+    if(questionState(adaptiveStatFor(masteryData, q.id)) === 'wrong'){
+      list.push({ q: q.q, answer: q.answer, options: q.options, explain: q.explain, wrongTip: q.wrongTip, _qid: q.id });
     }
-  }
+  });
   return list;
 }
 
@@ -1387,7 +1424,7 @@ function startReviewSession(hp){
     options: shuffle(item.options),
     explain: item.explain,
     wrongTip: item.wrongTip,
-    _origin: item._origin
+    _qid: item._qid
   }));
   currentIndex = 0;
   qOrder = currentQuestions.map((_, i) => i);
@@ -1397,7 +1434,6 @@ function startReviewSession(hp){
   firstAnswers = new Array(currentQuestions.length).fill(null);
   mastered = new Array(currentQuestions.length).fill(false);
   appearCount = new Array(currentQuestions.length).fill(0);
-  liveMasteryStreak = new Array(currentQuestions.length).fill(0); // mọi câu ở đây đều đang ở streak 0 (đang sai)
   flagged = new Array(currentQuestions.length).fill(false);
   timeUp = false;
   quizStartTime = Date.now();
@@ -1412,10 +1448,10 @@ function startReviewSession(hp){
 let adaptiveGroupOfQ = []; // slot gốc (theo currentQuestions) -> nhóm lúc chọn ('new'|'wrong'|'shaky'|'mastered'), chỉ để hiện nhãn
 
 function startAdaptiveSession(hp){
+  const data = migrateLegacyMasteryIfNeeded(hp);
   const pickedIdx = pickAdaptiveQuestions(hp);
   if(pickedIdx.length === 0) return;
 
-  const data = loadAdaptive(hp.id);
   reviewSessionActive = false;
   adaptiveSessionActive = true;
   adaptiveSessionLabel = `${hp.name} · Luyện tập thông minh`;
@@ -1431,10 +1467,10 @@ function startAdaptiveSession(hp){
       options: shuffle(q.options),
       explain: q.explain,
       wrongTip: q.wrongTip,
-      _adaptiveId: q.id
+      _qid: q.id
     };
   });
-  adaptiveGroupOfQ = currentQuestions.map(item => adaptiveGroup(adaptiveStatFor(data, item._adaptiveId)));
+  adaptiveGroupOfQ = currentQuestions.map(item => adaptiveGroup(adaptiveStatFor(data, item._qid)));
   currentIndex = 0;
   qOrder = currentQuestions.map((_, i) => i);
   slotIsPriority = new Array(qOrder.length).fill(false); // adaptive dùng nhãn nhóm riêng, không dùng cờ ưu tiên chung
@@ -1519,16 +1555,11 @@ function renderQuestion(){
   if(isExam){
     document.getElementById('quiz-counter').textContent = `${currentIndex+1}/${currentQuestions.length}`;
     document.getElementById('progress-fill').style.width = `${((currentIndex)/currentQuestions.length)*100}%`;
-  } else if(adaptiveSessionActive){
-    // Luyện tập thông minh: % đã thuộc là của riêng câu đang xem (mastery/5), không phải tiến độ cả phiên.
-    const stat = adaptiveStatFor(loadAdaptive(currentHp.id), item._adaptiveId);
-    const qPct = Math.round(stat.mastery / ADAPTIVE_MASTERY_CAP * 100);
-    document.getElementById('mastery-pct').textContent = `${qPct}% đã thuộc`;
-    document.getElementById('progress-fill').style.width = `${Math.round((currentIndex/qOrder.length)*100)}%`;
   } else {
-    // % đã thuộc là của riêng câu đang xem (streak đúng liên tiếp/MASTERY_CAP), không phải tiến độ cả phiên.
-    const streak = liveMasteryStreak[qIdx] || 0;
-    const qPct = Math.round(streak / MASTERY_CAP * 100);
+    // % đã thuộc là của riêng câu đang xem (kho độ thuộc dùng chung, mastery/5), không phải tiến độ cả phiên.
+    // Dùng chung cho cả Luyện tập/Ôn câu sai/Luyện tập thông minh vì giờ cùng đọc 1 nguồn dữ liệu.
+    const stat = adaptiveStatFor(migrateLegacyMasteryIfNeeded(currentHp), item._qid);
+    const qPct = Math.round(stat.mastery / ADAPTIVE_MASTERY_CAP * 100);
     document.getElementById('mastery-pct').textContent = `${qPct}% đã thuộc`;
     document.getElementById('progress-fill').style.width = `${Math.round((currentIndex/qOrder.length)*100)}%`;
   }
@@ -1536,7 +1567,7 @@ function renderQuestion(){
   if(!isExam && slotIsRepeat[currentIndex]) qTag = ' · Ôn lại';
   else if(adaptiveSessionActive) qTag = ' · ' + (ADAPTIVE_GROUP_LABEL[adaptiveGroupOfQ[qIdx]] || '');
   else if(!isExam && slotIsPriority[currentIndex]) qTag = ' · Chưa thuộc, cần ôn thêm';
-  const qNumDisplay = (adaptiveSessionActive && item._adaptiveId) ? item._adaptiveId : qIdx + 1;
+  const qNumDisplay = (adaptiveSessionActive && item._qid) ? item._qid : qIdx + 1;
   document.getElementById('q-num-label').textContent = `CÂU ${qNumDisplay}` + qTag;
   document.getElementById('q-text').textContent = item.q;
 
@@ -1653,10 +1684,9 @@ function selectAnswer(optText){
   const item = currentQuestions[qIdx];
   const isCorrect = optText === item.answer;
   if(isFirstAttempt) logAnswer(isCorrect);
-  if(isFirstAttempt && adaptiveSessionActive) applyAdaptiveUpdate(currentHp.id, item._adaptiveId, isCorrect);
-  if(isFirstAttempt && !adaptiveSessionActive){
-    liveMasteryStreak[qIdx] = isCorrect ? Math.min(MASTERY_CAP, (liveMasteryStreak[qIdx] || 0) + 1) : 0;
-  }
+  // Ghi độ thuộc ngay khi trả lời lần đầu, cho mọi chế độ (Luyện tập/Thi thử/Ôn câu sai/Thông minh)
+  // vào cùng 1 kho chung theo id câu — để tiến độ luôn nhất quán dù học ở đâu.
+  if(isFirstAttempt && item._qid) applyAdaptiveUpdate(currentHp.id, item._qid, isCorrect);
   if(isCorrect){
     mastered[qIdx] = true;
   } else {
@@ -1844,62 +1874,16 @@ function finishQuiz(){
   const total = currentQuestions.length;
   const score = firstAnswers.reduce((acc, ans, i) => acc + (ans === currentQuestions[i].answer ? 1 : 0), 0);
 
-  if(reviewSessionActive){
-    // Câu trong phiên "Ôn câu sai" đến từ nhiều đề khác nhau — cập nhật độ thuộc (mastery)
-    // đúng vào đề gốc của từng câu, không đụng tới điểm/số lần làm của cả đề đó.
-    const byHp = {};
-    currentQuestions.forEach((item, i) => {
-      const origin = item._origin;
-      if(!origin) return;
-      const wasCorrect = firstAnswers[i] === item.answer;
-      byHp[origin.hpId] = byHp[origin.hpId] || {};
-      byHp[origin.hpId][origin.setIndex] = byHp[origin.hpId][origin.setIndex] || [];
-      byHp[origin.hpId][origin.setIndex].push({ localIndex: origin.localIndex, wasCorrect });
-    });
-    Object.keys(byHp).forEach(hpId => {
-      const results = loadResultsFor(hpId);
-      Object.keys(byHp[hpId]).forEach(setIndexStr => {
-        const setIndex = Number(setIndexStr);
-        const r = results[setIndex] || { score: 0, total: 0, best: 0, attempts: 0, wrongIndices: [], mastery: {} };
-        const mastery = r.mastery || {};
-        const wrongSet = new Set(r.wrongIndices || []);
-        byHp[hpId][setIndex].forEach(u => {
-          const prevStreak = mastery[u.localIndex] || 0;
-          mastery[u.localIndex] = u.wasCorrect ? prevStreak + 1 : 0;
-          if(u.wasCorrect) wrongSet.delete(u.localIndex); else wrongSet.add(u.localIndex);
-        });
-        r.mastery = mastery;
-        r.wrongIndices = Array.from(wrongSet);
-        results[setIndex] = r;
-      });
-      localStorage.setItem('quiz_' + hpId + '_results_v1', JSON.stringify(results));
-    });
-    renderResult(score, total);
-    showScreen('result');
-    return;
-  }
-
-  if(adaptiveSessionActive){
-    // Cập nhật mastery/streak từng câu đã được ghi ngay khi trả lời (applyAdaptiveUpdate);
+  if(reviewSessionActive || adaptiveSessionActive){
+    // Độ thuộc từng câu đã được ghi ngay khi trả lời (applyAdaptiveUpdate, vào kho chung theo id);
     // ở đây chỉ cần hiện kết quả, không có "đề" cụ thể để lưu điểm best/attempts.
     renderResult(score, total);
     showScreen('result');
     return;
   }
 
-  const wrongIndices = [];
-  firstAnswers.forEach((ans, i) => { if(ans !== currentQuestions[i].answer) wrongIndices.push(i); });
-
-  const prevResult = loadResults()[currentSetIndex];
-  const prevMastery = (prevResult && prevResult.mastery) || {};
-  const newMastery = {};
-  currentQuestions.forEach((item, i) => {
-    const wasCorrect = firstAnswers[i] === item.answer;
-    const prevStreak = prevMastery[i] || 0;
-    newMastery[i] = wasCorrect ? prevStreak + 1 : 0;
-  });
-
-  saveResult(currentSetIndex, score, total, wrongIndices, newMastery);
+  // Luyện tập/Thi thử theo đề: độ thuộc từng câu cũng đã ghi live, ở đây chỉ lưu điểm/số lần làm cả đề.
+  saveResult(currentSetIndex, score, total);
   renderResult(score, total);
   showScreen('result');
 }
@@ -1914,11 +1898,11 @@ function renderResult(score, total){
   document.getElementById('score-den').textContent = `/ ${total}`;
 
   const adaptiveSummary = document.getElementById('result-adaptive-summary');
-  if(adaptiveSessionActive){
-    const data = loadAdaptive(currentHp.id);
+  if(adaptiveSessionActive || reviewSessionActive){
+    const data = migrateLegacyMasteryIfNeeded(currentHp);
     let masteredN = 0, wrongN = 0, learningN = 0;
     currentQuestions.forEach(item => {
-      const g = adaptiveGroup(adaptiveStatFor(data, item._adaptiveId));
+      const g = adaptiveGroup(adaptiveStatFor(data, item._qid));
       if(g === 'mastered') masteredN++;
       else if(g === 'wrong') wrongN++;
       else learningN++; // 'new' hoặc 'shaky': mới học/chưa đủ ổn định
@@ -1991,7 +1975,7 @@ function renderReviewList(){
     div.innerHTML = `
       <div class="r-top">
         <div class="r-badge ${isCorrect?'ok':'bad'}">${isCorrect ? checkIcon() : xIcon()}</div>
-        <div class="r-q">Câu ${item._adaptiveId || (i+1)}. ${escapeHtml(item.q)}</div>
+        <div class="r-q">Câu ${(adaptiveSessionActive && item._qid) ? item._qid : (i+1)}. ${escapeHtml(item.q)}</div>
       </div>
       <div class="r-answer ${isCorrect?'ok-text':'bad-text'}">
         <span class="lbl">Bạn chọn:</span> ${escapeHtml(firstAnswers[i] ?? '(bỏ trống)')}
@@ -2055,22 +2039,16 @@ function loadResultsFor(hpId){
   }catch(e){ return {}; }
 }
 
-// Trạng thái từng câu (theo streak trả lời đúng liên tiếp, giống thuật toán ưu tiên ở Luyện tập):
-//   >= MASTERY_CAP  -> đã thuộc
-//   1 .. CAP-1      -> đang học
-//   0 nhưng có làm  -> vừa sai / chưa vững
-//   chưa từng làm   -> chưa học
-function questionState(mastery, wrongIndices, i){
-  const streak = (mastery && mastery[i]) || 0;
-  if(streak >= MASTERY_CAP) return 'mastered';
-  if(streak > 0) return 'learning';
-  if(wrongIndices && wrongIndices.includes(i)) return 'wrong';
-  if(mastery && Object.prototype.hasOwnProperty.call(mastery, i)) return 'wrong';
-  return 'unseen';
+// Trạng thái từng câu, dựa trên kho độ thuộc dùng chung (xem adaptiveGroup):
+//   mastered -> đã thuộc · shaky -> đang học (chưa chắc) · wrong -> vừa sai/chưa vững · new -> chưa học
+const ADAPTIVE_GROUP_TO_QSTATE = { new: 'unseen', wrong: 'wrong', shaky: 'learning', mastered: 'mastered' };
+function questionState(stat){
+  return ADAPTIVE_GROUP_TO_QSTATE[adaptiveGroup(stat)];
 }
 
 function computeHpStats(hp){
   const results = loadResultsFor(hp.id);
+  const masteryData = migrateLegacyMasteryIfNeeded(hp);
   const setSize = hp.setSize;
   const totalSets = Math.ceil(hp.questions.length / setSize);
   let masteredCount = 0, learningCount = 0, wrongCount = 0;
@@ -2083,7 +2061,8 @@ function computeHpStats(hp){
     const r = results[s];
     let setMastered = 0, setLearning = 0, setWrong = 0;
     for(let i = 0; i < setLen; i++){
-      const st = questionState(r && r.mastery, r && r.wrongIndices, i);
+      const q = hp.questions[start + i];
+      const st = questionState(adaptiveStatFor(masteryData, q.id));
       if(st === 'mastered') setMastered++;
       else if(st === 'learning') setLearning++;
       else if(st === 'wrong') setWrong++;
@@ -2419,8 +2398,7 @@ function renderStatsSet(container){
   const hp = HP_LIST.find(h => h.id === statsView.hpId);
   if(!hp) return goStats('hp-list');
   const setIndex = statsView.setIndex;
-  const results = loadResultsFor(hp.id);
-  const r = results[setIndex];
+  const masteryData = migrateLegacyMasteryIfNeeded(hp);
   const start = setIndex * hp.setSize;
   const end = Math.min(start + hp.setSize, hp.questions.length);
   const setLen = end - start;
@@ -2442,7 +2420,8 @@ function renderStatsSet(container){
 
   const grid = document.getElementById('stats-grid');
   for(let i = 0; i < setLen; i++){
-    const st = questionState(r && r.mastery, r && r.wrongIndices, i);
+    const q = hp.questions[start + i];
+    const st = questionState(adaptiveStatFor(masteryData, q.id));
     const cell = document.createElement('div');
     cell.className = 'stats-cell' + (st === 'mastered' ? ' m-mastered' : st === 'learning' ? ' m-learning' : st === 'wrong' ? ' m-wrong' : '');
     cell.textContent = start + i + 1;
