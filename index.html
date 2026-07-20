@@ -583,6 +583,15 @@
     background: var(--indigo-glow); color: var(--indigo); margin-left:6px; vertical-align:middle;
   }
 
+  /* ---------- Welcome popup ---------- */
+  .welcome-modal-sheet{
+    text-align:center; border-radius:22px; max-width:380px;
+    padding: 34px 26px calc(26px + env(safe-area-inset-bottom));
+    box-shadow: 0 20px 50px -12px rgba(20,22,42,0.4);
+  }
+  .welcome-emoji{ font-size:58px; line-height:1; margin-bottom:16px; }
+  .welcome-title{ font-size:21px; font-weight:800; letter-spacing:-0.01em; line-height:1.45; }
+
   /* ---------- Answer feedback popup ---------- */
   .answer-modal-sheet{
     text-align:center; padding-top: 28px;
@@ -660,6 +669,15 @@
 </head>
 <body>
 <button id="theme-toggle" class="theme-toggle" aria-label="Đổi giao diện sáng/tối">🌙</button>
+
+<div id="welcome-modal" class="modal-overlay center-modal">
+  <div class="modal-sheet welcome-modal-sheet">
+    <div class="welcome-emoji">👨‍🌾</div>
+    <div class="welcome-title">Chào mừng đến trang web làm bài của Bác nông dân</div>
+    <button class="btn btn-primary" id="welcome-modal-close" style="width:100%; margin-top:20px;">Bắt đầu</button>
+  </div>
+</div>
+
 <div id="app">
 
   <div class="bottom-tabs" id="bottom-tabs">
@@ -1330,6 +1348,11 @@ document.getElementById('theme-toggle').addEventListener('click', () => {
   applyTheme(current === 'dark' ? 'light' : 'dark');
 });
 applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light'); // đồng bộ icon với theme đã áp lúc đầu trang
+
+/* ---------- Popup chào mừng ---------- */
+document.getElementById('welcome-modal-close').addEventListener('click', () => {
+  document.getElementById('welcome-modal').classList.add('hidden');
+});
 
 document.addEventListener('fullscreenchange', () => {
   const hint = document.getElementById('fullscreen-hint');
