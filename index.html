@@ -1851,6 +1851,7 @@ function selectAnswer(optText){
 
 let popupLocked = false;
 let popupUnlockTimer = null;
+let popupCountdownInterval = null;
 const WRONG_POPUP_LOCK_MS = 2000;
 
 function showAnswerPopup(isCorrect, item){
@@ -1884,24 +1885,36 @@ function showAnswerPopup(isCorrect, item){
   const nextBtn = document.getElementById('answer-modal-next');
   const nextLabel = document.getElementById('answer-modal-next-label');
   const nextSpinner = document.getElementById('answer-modal-next-spinner');
-  nextBtn.classList.remove('hidden'); // luôn hiện nút — khi sai thì khoá + hiện vòng tròn load thay vì ẩn hẳn
+  nextBtn.classList.remove('hidden'); // luôn hiện nút — khi sai thì khoá + đếm ngược thay vì ẩn hẳn
   if(popupUnlockTimer){ clearTimeout(popupUnlockTimer); popupUnlockTimer = null; }
+  if(popupCountdownInterval){ clearInterval(popupCountdownInterval); popupCountdownInterval = null; }
   if(isCorrect){
     popupLocked = false;
     nextBtn.disabled = false;
     nextSpinner.classList.add('hidden');
     nextLabel.textContent = 'Tiếp tục';
   } else {
-    // Sai: hiện nút Tiếp tục nhưng khoá + hiện vòng tròn load vài giây, buộc đọc giải thích trước khi qua câu.
+    // Sai: hiện nút Tiếp tục nhưng khoá + đếm ngược rõ số giây, buộc đọc kỹ giải thích trước khi qua câu.
     popupLocked = true;
     nextBtn.disabled = true;
     nextSpinner.classList.remove('hidden');
-    nextLabel.textContent = 'Đang chờ...';
+    let remainingSec = Math.ceil(WRONG_POPUP_LOCK_MS / 1000);
+    nextLabel.textContent = `Xem kĩ lại (${remainingSec}s)`;
+    popupCountdownInterval = setInterval(() => {
+      remainingSec--;
+      if(remainingSec > 0){
+        nextLabel.textContent = `Xem kĩ lại (${remainingSec}s)`;
+      } else {
+        clearInterval(popupCountdownInterval);
+        popupCountdownInterval = null;
+      }
+    }, 1000);
     popupUnlockTimer = setTimeout(() => {
       popupLocked = false;
       nextBtn.disabled = false;
       nextSpinner.classList.add('hidden');
       nextLabel.textContent = 'Tiếp tục';
+      if(popupCountdownInterval){ clearInterval(popupCountdownInterval); popupCountdownInterval = null; }
       popupUnlockTimer = null;
     }, WRONG_POPUP_LOCK_MS);
   }
