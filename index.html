@@ -150,6 +150,10 @@
   .adaptive-cta .ac-title{ font-size:15.5px; font-weight:800; color:#fff; letter-spacing:-0.01em; }
   .adaptive-cta .ac-desc{ font-size:12px; color:rgba(255,255,255,0.85); margin-top:3px; line-height:1.4; }
   .adaptive-cta .ac-arrow{ color:#fff; flex-shrink:0; }
+  .adaptive-cta.special-cta{
+    background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+    box-shadow: 0 8px 24px -8px rgba(217,119,6,0.5);
+  }
 
   .set-grid{
     padding: 14px 16px 20px;
@@ -728,6 +732,14 @@
       </div>
       <svg class="ac-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
     </div>
+    <div class="adaptive-cta special-cta hidden" id="special-cta">
+      <div class="ac-icon">🔢</div>
+      <div class="ac-text">
+        <div class="ac-title" id="special-cta-title">Câu số liệu dễ nhầm</div>
+        <div class="ac-desc" id="special-cta-desc"></div>
+      </div>
+      <svg class="ac-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+    </div>
     <div class="stats-row">
       <div class="stat-chip">
         <div class="num" id="stat-attempted">0/8</div>
@@ -1294,6 +1306,9 @@ let reviewSessionActive = false; // true when doing a cross-đề "Ôn câu sai"
 let reviewSessionLabel = '';
 let adaptiveSessionActive = false; // true when doing "Luyện tập thông minh" (adaptive, toàn bộ học phần)
 let adaptiveSessionLabel = '';
+let specialSessionActive = false; // true when doing a curated fixed-id set (xem SPECIAL_SETS, ví dụ "Câu số liệu dễ nhầm")
+let specialSessionLabel = '';
+let activeSpecialSet = null; // { key, label, desc, ids } của bộ đang luyện, để nút "Làm lại" khởi động đúng bộ
 let currentQuestions = [];   // array of {q, options(shuffled), answer}
 let currentIndex = 0;        // pointer into qOrder (the play queue)
 let qOrder = [];             // slot -> original question index (grows when a question is repeated)
@@ -1406,6 +1421,14 @@ function renderHome(){
   document.getElementById('adaptive-cta-desc').textContent =
     `Tự động cá nhân hoá ~${sessionSize}/${QUESTIONS.length} câu mỗi phiên — ưu tiên đúng câu bạn cần ôn, không cần tự nghĩ nên học gì.`;
 
+  const specialCta = document.getElementById('special-cta');
+  const special = SPECIAL_SETS[currentHp.id];
+  specialCta.classList.toggle('hidden', !special);
+  if(special){
+    document.getElementById('special-cta-title').textContent = special.label;
+    document.getElementById('special-cta-desc').textContent = `${special.ids.length} ${special.desc}`;
+  }
+
   let attemptedCount = 0;
   let totalPct = 0;
 
@@ -1510,6 +1533,7 @@ const ADAPTIVE_GROUP_SORT_RANK = { wrong: 0, new: 1, shaky: 2, mastered: 3 };
 function startQuiz(setIndex, mode){
   reviewSessionActive = false;
   adaptiveSessionActive = false;
+  specialSessionActive = false;
   currentSetIndex = setIndex;
   currentMode = mode || 'practice';
   const rawSet = SETS[setIndex];
@@ -1563,6 +1587,66 @@ function startQuiz(setIndex, mode){
   renderQuestion();
 }
 
+// Bộ câu tuyển chọn thủ công theo từng học phần (đáp án là số/số km/số lượng cụ thể — dễ nhầm lẫn giữa
+// các phương án gần giống nhau), để ôn tách riêng khỏi các câu còn lại. Chỉ là 1 danh sách id cố định,
+// không đổi thứ tự/nội dung các đề mặc định trong data/hp*.js.
+const SPECIAL_SETS = {
+  hp1: {
+    key: 'so-lieu',
+    label: 'Câu số liệu dễ nhầm',
+    desc: 'câu có đáp án là số, số km, số lượng cụ thể — dễ nhầm lẫn, ôn riêng cho chắc.',
+    ids: [15,27,31,66,76,90,98,102,103,108,110,113,114,115,117,118,119,121,126,127,130,134,139,141,143]
+  }
+};
+
+function collectSpecialQuestions(hp, ids){
+  const idSet = new Set(ids);
+  return hp.questions
+    .filter(q => idSet.has(q.id))
+    .map(q => ({ q: q.q, answer: q.answer, options: q.options, explain: q.explain, wrongTip: q.wrongTip, _qid: q.id }));
+}
+
+function startSpecialSession(hp, special){
+  const list = collectSpecialQuestions(hp, special.ids);
+  if(list.length === 0) return;
+
+  reviewSessionActive = false;
+  adaptiveSessionActive = false;
+  specialSessionActive = true;
+  activeSpecialSet = special;
+  specialSessionLabel = `${special.label} · ${hp.name}`;
+  selectHp(hp);
+  currentSetIndex = null;
+  currentMode = 'practice';
+
+  currentQuestions = list.map(item => ({
+    q: item.q,
+    answer: item.answer,
+    options: shuffle(item.options),
+    explain: item.explain,
+    wrongTip: item.wrongTip,
+    _qid: item._qid
+  }));
+  currentIndex = 0;
+  qOrder = currentQuestions.map((_, i) => i);
+  sessionQueueCap = Math.ceil(qOrder.length * SESSION_GROWTH_MULT);
+  slotIsPriority = new Array(qOrder.length).fill(false); // không phải mọi câu đều "chưa thuộc" nên không gắn cờ ưu tiên chung
+  slotAnswers = new Array(qOrder.length).fill(null);
+  slotIsRepeat = new Array(qOrder.length).fill(false);
+  firstAnswers = new Array(currentQuestions.length).fill(null);
+  mastered = new Array(currentQuestions.length).fill(false);
+  appearCount = new Array(currentQuestions.length).fill(0);
+  flagged = new Array(currentQuestions.length).fill(false);
+  timeUp = false;
+  quizStartTime = Date.now();
+  document.getElementById('quiz-title').textContent = specialSessionLabel;
+
+  setupQuizUiForMode('practice');
+  showScreen('quiz');
+  renderDots();
+  renderQuestion();
+}
+
 function collectWrongQuestions(hp){
   // Gom theo kho độ thuộc dùng chung (không cần đề đó đã "làm" theo nghĩa cũ —
   // câu chỉ sai riêng trong Luyện tập thông minh cũng được gom vào đây).
@@ -1582,6 +1666,7 @@ function startReviewSession(hp){
 
   reviewSessionActive = true;
   adaptiveSessionActive = false;
+  specialSessionActive = false;
   reviewSessionLabel = `Ôn câu sai · ${hp.name}`;
   selectHp(hp);
   currentSetIndex = null;
@@ -1624,6 +1709,7 @@ function startAdaptiveSession(hp){
 
   reviewSessionActive = false;
   adaptiveSessionActive = true;
+  specialSessionActive = false;
   adaptiveSessionLabel = `${hp.name} · Luyện tập thông minh`;
   selectHp(hp);
   currentSetIndex = null;
@@ -1662,6 +1748,10 @@ function startAdaptiveSession(hp){
 }
 document.getElementById('adaptive-cta').addEventListener('click', () => {
   if(currentHp) startAdaptiveSession(currentHp);
+});
+document.getElementById('special-cta').addEventListener('click', () => {
+  const special = currentHp && SPECIAL_SETS[currentHp.id];
+  if(special) startSpecialSession(currentHp, special);
 });
 
 function stopTimer(){
@@ -1738,6 +1828,7 @@ function renderQuestion(){
   let qTag = '';
   if(!isExam && slotIsRepeat[currentIndex]) qTag = ' · Ôn lại';
   else if(adaptiveSessionActive) qTag = ' · ' + (ADAPTIVE_GROUP_LABEL[adaptiveGroupOfQ[qIdx]] || '');
+  else if(specialSessionActive && activeSpecialSet) qTag = ' · ' + activeSpecialSet.label;
   else if(!isExam && slotIsPriority[currentIndex]) qTag = ' · Chưa thuộc, cần ôn thêm';
   const qNumDisplay = (adaptiveSessionActive && item._qid) ? item._qid : qIdx + 1;
   document.getElementById('q-num-label').textContent = `CÂU ${qNumDisplay}` + qTag;
@@ -2076,7 +2167,7 @@ function finishQuiz(){
   const total = currentQuestions.length;
   const score = firstAnswers.reduce((acc, ans, i) => acc + (ans === currentQuestions[i].answer ? 1 : 0), 0);
 
-  if(reviewSessionActive || adaptiveSessionActive){
+  if(reviewSessionActive || adaptiveSessionActive || specialSessionActive){
     // Độ thuộc từng câu đã được ghi ngay khi trả lời (applyAdaptiveUpdate, vào kho chung theo id);
     // ở đây chỉ cần hiện kết quả, không có "đề" cụ thể để lưu điểm best/attempts.
     renderResult(score, total);
@@ -2095,12 +2186,14 @@ function renderResult(score, total){
     ? reviewSessionLabel
     : adaptiveSessionActive
     ? adaptiveSessionLabel
+    : specialSessionActive
+    ? specialSessionLabel
     : `Đề ${currentSetIndex+1}` + (currentMode === 'exam' ? ' · Thi thử' : ' · Luyện tập');
   document.getElementById('score-num').textContent = score;
   document.getElementById('score-den').textContent = `/ ${total}`;
 
   const adaptiveSummary = document.getElementById('result-adaptive-summary');
-  if(adaptiveSessionActive || reviewSessionActive){
+  if(adaptiveSessionActive || reviewSessionActive || specialSessionActive){
     const data = migrateLegacyMasteryIfNeeded(currentHp);
     let masteredN = 0, wrongN = 0, learningN = 0;
     currentQuestions.forEach(item => {
@@ -2139,8 +2232,8 @@ function renderResult(score, total){
   document.getElementById('result-verdict').textContent = verdict;
   document.getElementById('result-subverdict').textContent = sub;
 
-  document.getElementById('btn-retry').textContent = adaptiveSessionActive ? 'Luyện tiếp lượt mới' : reviewSessionActive ? 'Ôn lại các câu này' : 'Làm lại đề này';
-  document.getElementById('btn-choose-other').textContent = adaptiveSessionActive || reviewSessionActive ? 'Về trang chủ' : 'Chọn đề khác';
+  document.getElementById('btn-retry').textContent = adaptiveSessionActive ? 'Luyện tiếp lượt mới' : (reviewSessionActive || specialSessionActive) ? 'Ôn lại các câu này' : 'Làm lại đề này';
+  document.getElementById('btn-choose-other').textContent = adaptiveSessionActive || reviewSessionActive || specialSessionActive ? 'Về trang chủ' : 'Chọn đề khác';
 
   reviewData = currentQuestions.map((item, i) => ({
     i, item, isCorrect: firstAnswers[i] === item.answer
@@ -2206,6 +2299,7 @@ document.getElementById('review-filters').addEventListener('click', (e) => {
 document.getElementById('btn-retry').addEventListener('click', () => {
   if(reviewSessionActive) startReviewSession(currentHp);
   else if(adaptiveSessionActive) startAdaptiveSession(currentHp);
+  else if(specialSessionActive && activeSpecialSet) startSpecialSession(currentHp, activeSpecialSet);
   else startQuiz(currentSetIndex, currentMode);
 });
 document.getElementById('btn-choose-other').addEventListener('click', () => { showScreen('home'); renderHome(); });
