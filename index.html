@@ -155,6 +155,23 @@
     box-shadow: 0 8px 24px -8px rgba(217,119,6,0.5);
   }
 
+  /* ---------- Link "Xem đáp án & giải thích" + màn hình đáp án ---------- */
+  .answerkey-link{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    margin: 4px 20px 4px;
+    padding: 13px 16px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--bg-elev);
+    cursor:pointer; font-size:13.5px; font-weight:600; color: var(--text);
+  }
+  .answerkey-link:active{ background: var(--bg-elev-2); }
+  .answerkey-link .ak-arrow{ color: var(--text-faint); flex-shrink:0; }
+  .ak-opts{ margin-top:8px; display:flex; flex-direction:column; gap:6px; }
+  .ak-opt{ display:flex; align-items:center; gap:8px; font-size:13.5px; color: var(--text-dim); padding:6px 10px; border-radius:8px; }
+  .ak-opt svg{ width:15px; height:15px; flex-shrink:0; }
+  .ak-opt-correct{ background: var(--green-bg); color: var(--green); font-weight:700; }
+
   .set-grid{
     padding: 14px 16px 20px;
     display:grid; grid-template-columns: 1fr 1fr; gap:12px;
@@ -766,12 +783,27 @@
         <div class="label">Tiến độ học phần</div>
       </div>
     </div>
+    <div class="answerkey-link" id="answerkey-link">
+      <span>📖 Xem đáp án &amp; giải thích toàn bộ <span id="answerkey-link-count">150</span> câu</span>
+      <svg class="ak-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+    </div>
     <div class="stats-section-title">Hoặc chọn đề cụ thể</div>
     <div class="set-grid" id="set-grid"></div>
     <div class="app-footer">
       <div class="footer-copyright">© 2026 Trần Tiến</div>
       <div class="footer-note">Dữ liệu lưu trên máy bạn (localStorage)</div>
     </div>
+  </div>
+
+  <!-- ============ ANSWER KEY SCREEN (xem toàn bộ đáp án + giải thích, không phải làm bài) ============ -->
+  <div id="screen-answerkey" class="hidden">
+    <div class="topbar">
+      <div class="back-btn" id="answerkey-back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </div>
+      <div class="title" id="answerkey-title">Đáp án &amp; giải thích</div>
+    </div>
+    <div class="review-list" id="answerkey-list"></div>
   </div>
 
   <!-- ============ STATS SCREEN ============ -->
@@ -1341,6 +1373,7 @@ const screens = {
   stats: document.getElementById('screen-stats'),
   quiz: document.getElementById('screen-quiz'),
   result: document.getElementById('screen-result'),
+  answerkey: document.getElementById('screen-answerkey'),
 };
 function requestFullscreenSafe(){
   const el = document.documentElement;
@@ -1420,6 +1453,8 @@ function renderHome(){
   const sessionSize = Math.min(ADAPTIVE_SESSION_SIZE, QUESTIONS.length);
   document.getElementById('adaptive-cta-desc').textContent =
     `Tự động cá nhân hoá ~${sessionSize}/${QUESTIONS.length} câu mỗi phiên — ưu tiên đúng câu bạn cần ôn, không cần tự nghĩ nên học gì.`;
+
+  document.getElementById('answerkey-link-count').textContent = QUESTIONS.length;
 
   const specialCta = document.getElementById('special-cta');
   const special = SPECIAL_SETS[currentHp.id];
@@ -2287,6 +2322,35 @@ function renderReviewList(){
     reviewContainer.appendChild(div);
   });
 }
+
+// Xem toàn bộ đáp án + giải thích của cả học phần, không phải làm bài — chỉ đọc, dùng để ôn nhanh
+// hoặc tra cứu, tách riêng khỏi luồng quiz.
+function renderAnswerKey(hp){
+  document.getElementById('answerkey-title').textContent = `Đáp án & giải thích · ${hp.name}`;
+  const container = document.getElementById('answerkey-list');
+  container.innerHTML = '';
+  hp.questions.forEach(q => {
+    const div = document.createElement('div');
+    div.className = 'review-item';
+    const optsHtml = q.options.map(opt => {
+      const isAns = opt === q.answer;
+      return `<div class="ak-opt${isAns ? ' ak-opt-correct' : ''}">${isAns ? checkIcon() : ''}<span>${escapeHtml(opt)}</span></div>`;
+    }).join('');
+    const tip = q.explain || q.wrongTip;
+    div.innerHTML = `
+      <div class="r-q">Câu ${q.id}. ${escapeHtml(q.q)}</div>
+      <div class="ak-opts">${optsHtml}</div>
+      ${tip ? `<div class="explain-box" style="margin:8px 0 0;"><span class="explain-icon">💡</span><span><span class="explain-label">Giải thích:</span>${escapeHtml(tip)}</span></div>` : ''}
+    `;
+    container.appendChild(div);
+  });
+}
+document.getElementById('answerkey-link').addEventListener('click', () => {
+  if(!currentHp) return;
+  renderAnswerKey(currentHp);
+  showScreen('answerkey');
+});
+document.getElementById('answerkey-back').addEventListener('click', () => { showScreen('home'); renderHome(); });
 
 document.getElementById('review-filters').addEventListener('click', (e) => {
   const btn = e.target.closest('.filter-chip');
