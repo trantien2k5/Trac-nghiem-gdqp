@@ -261,10 +261,15 @@
     background: var(--indigo); margin: 0 7px 1px; vertical-align:middle;
   }
   .app-footer .footer-note{ padding: 4px 0 0; }
+  .footer-links{
+    display:flex; align-items:center; justify-content:center; flex-wrap:wrap;
+    gap: 4px 16px; margin-top:10px;
+  }
   .feedback-link{
     display:inline-flex; align-items:center; gap:5px;
-    margin-top:10px; font-size:12px; font-weight:700;
+    font-size:12px; font-weight:700;
     color: var(--indigo); text-decoration:none;
+    background:none; border:none; cursor:pointer; padding:2px; font-family:inherit;
   }
   .feedback-link:active{ opacity:0.7; }
 
@@ -648,6 +653,11 @@
   .welcome-title{ font-size:21px; font-weight:800; letter-spacing:-0.01em; line-height:1.45; }
   .welcome-subtitle{ font-size:13.5px; color: var(--text-dim); line-height:1.5; margin-top:10px; }
 
+  /* ---------- Popup ủng hộ tác giả (QR chuyển khoản) ---------- */
+  .donate-modal-sheet{ text-align:center; border-radius:22px; max-width:360px; padding: 30px 24px calc(24px + env(safe-area-inset-bottom)); }
+  .donate-emoji{ font-size:44px; line-height:1; margin-bottom:10px; }
+  .donate-qr-img{ width:100%; max-width:260px; border-radius:16px; margin-top:16px; box-shadow: var(--shadow-card); }
+
   /* ---------- Answer feedback popup ---------- */
   .answer-modal-sheet{
     text-align:center; padding-top: 28px;
@@ -743,6 +753,16 @@
   </div>
 </div>
 
+<div id="donate-modal" class="modal-overlay center-modal hidden">
+  <div class="modal-sheet donate-modal-sheet">
+    <div class="donate-emoji">☕</div>
+    <div class="welcome-title">Ủng hộ tác giả</div>
+    <div class="welcome-subtitle">App miễn phí, không quảng cáo. Nếu thấy hữu ích, một ly cà phê ủng hộ sẽ là động lực để duy trì và cập nhật thêm câu hỏi mới.</div>
+    <img class="donate-qr-img" src="assets/donate-qr.jpg" alt="Mã QR chuyển khoản ủng hộ tác giả">
+    <button class="btn btn-primary" id="donate-modal-close" style="width:100%; margin-top:16px;">Đóng</button>
+  </div>
+</div>
+
 <div id="app">
 
   <div class="bottom-tabs" id="bottom-tabs">
@@ -766,7 +786,10 @@
     <div class="hp-list" id="hp-list"></div>
     <div class="app-footer">
       <div class="footer-copyright">Ôn Tập Trắc Nghiệm GDQP<span class="dot"></span>© 2026 Trần Tiến</div>
-      <a class="feedback-link" href="https://zalo.me/0382353110" target="_blank" rel="noopener noreferrer">💬 Báo lỗi / góp ý qua Zalo</a>
+      <div class="footer-links">
+        <a class="feedback-link" href="https://zalo.me/0382353110" target="_blank" rel="noopener noreferrer">💬 Báo lỗi / góp ý qua Zalo</a>
+        <button class="feedback-link" id="donate-link-1" type="button">☕ Ủng hộ tác giả</button>
+      </div>
     </div>
   </div>
 
@@ -836,7 +859,10 @@
     <div class="app-footer">
       <div class="footer-copyright">© 2026 Trần Tiến</div>
       <div class="footer-note">Dữ liệu lưu trên máy bạn (localStorage)</div>
-      <a class="feedback-link" href="https://zalo.me/0382353110" target="_blank" rel="noopener noreferrer">💬 Báo lỗi / góp ý qua Zalo</a>
+      <div class="footer-links">
+        <a class="feedback-link" href="https://zalo.me/0382353110" target="_blank" rel="noopener noreferrer">💬 Báo lỗi / góp ý qua Zalo</a>
+        <button class="feedback-link" id="donate-link-2" type="button">☕ Ủng hộ tác giả</button>
+      </div>
     </div>
   </div>
 
@@ -1478,6 +1504,22 @@ applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'dar
 /* ---------- Popup chào mừng ---------- */
 document.getElementById('welcome-modal-close').addEventListener('click', () => {
   document.getElementById('welcome-modal').classList.add('hidden');
+});
+
+/* ---------- Popup ủng hộ tác giả ---------- */
+function openDonateModal(){
+  document.getElementById('donate-modal').classList.remove('hidden');
+}
+function closeDonateModal(){
+  document.getElementById('donate-modal').classList.add('hidden');
+}
+['donate-link-1', 'donate-link-2'].forEach(id => {
+  const btn = document.getElementById(id);
+  if(btn) btn.addEventListener('click', openDonateModal);
+});
+document.getElementById('donate-modal-close').addEventListener('click', closeDonateModal);
+document.getElementById('donate-modal').addEventListener('click', (e) => {
+  if(e.target.id === 'donate-modal') closeDonateModal();
 });
 
 /* =========================================================
