@@ -1178,8 +1178,9 @@ function migrateLegacyMasteryIfNeeded(hp){
 }
 
 // Chọn ~ADAPTIVE_SESSION_SIZE câu theo tỉ lệ 40% chưa làm / 30% hay sai / 20% chưa chắc / 10% đã thuộc.
-// Nhóm nào không đủ số lượng thì phần thiếu được bù từ các nhóm khác (ưu tiên hay sai > chưa chắc > chưa làm > đã thuộc),
-// rồi xen kẽ (round-robin) giữa các nhóm để không dồn cục câu mới/câu ôn.
+// Nhóm nào không đủ số lượng thì phần thiếu được bù từ các nhóm khác (ưu tiên hay sai > chưa chắc > chưa làm > đã thuộc).
+// Thứ tự hiển thị trong phiên: hay sai/chưa làm/chưa chắc xen kẽ ngẫu nhiên lên ĐẦU, đã thuộc bị đẩy
+// xuống CUỐI phiên (tạm gác lại) — xem khối xen kẽ bên dưới.
 function pickAdaptiveQuestions(hp){
   const data = migrateLegacyMasteryIfNeeded(hp);
   const groups = { new: [], wrong: [], shaky: [], mastered: [] };
@@ -1226,7 +1227,12 @@ function pickAdaptiveQuestions(hp){
     }
   }
 
-  const buckets = shuffle(order.map(g => picked[g].slice()));
+  // Xen kẽ (round-robin, thứ tự nhóm ngẫu nhiên mỗi phiên) 3 nhóm cần ưu tiên — hay sai/chưa làm/chưa
+  // chắc (đang học dở dang) — để chúng luôn ở phần ĐẦU phiên. Nhóm "đã thuộc" bị đẩy xuống CUỐI cùng,
+  // xem như tạm gác lại: nếu phiên bị dừng giữa chừng thì phần đã bỏ dở gần như chắc chắn là câu đã
+  // thuộc (ít quan trọng nhất lúc này), còn thời gian học được dồn hết cho câu thực sự cần ôn trước.
+  const priorityOrder = ['new', 'wrong', 'shaky'];
+  const buckets = shuffle(priorityOrder.map(g => picked[g].slice()));
   const interleaved = [];
   let any = true;
   while(any){
@@ -1235,7 +1241,8 @@ function pickAdaptiveQuestions(hp){
       if(b.length){ interleaved.push(b.shift()); any = true; }
     }
   }
-  return interleaved.map(x => x.idx);
+  const masteredTail = shuffle(picked.mastered.slice());
+  return interleaved.concat(masteredTail).map(x => x.idx);
 }
 
 /* =========================================================
