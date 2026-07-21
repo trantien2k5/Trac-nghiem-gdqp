@@ -592,6 +592,7 @@
   }
   .welcome-emoji{ font-size:58px; line-height:1; margin-bottom:16px; }
   .welcome-title{ font-size:21px; font-weight:800; letter-spacing:-0.01em; line-height:1.45; }
+  .welcome-subtitle{ font-size:13.5px; color: var(--text-dim); line-height:1.5; margin-top:10px; }
 
   /* ---------- Answer feedback popup ---------- */
   .answer-modal-sheet{
@@ -675,6 +676,7 @@
   <div class="modal-sheet welcome-modal-sheet">
     <div class="welcome-emoji">👨‍🌾</div>
     <div class="welcome-title">Chào mừng đến trang web làm bài của Bác nông dân</div>
+    <div class="welcome-subtitle">Thuật toán thông minh tự động cá nhân hoá lộ trình ôn tập — bạn chỉ cần luyện tập, phần còn lại để hệ thống lo.</div>
     <button class="btn btn-primary" id="welcome-modal-close" style="width:100%; margin-top:20px;">Bắt đầu</button>
   </div>
 </div>
@@ -722,7 +724,7 @@
       <div class="ac-icon">🧠</div>
       <div class="ac-text">
         <div class="ac-title">Luyện tập thông minh</div>
-        <div class="ac-desc" id="adaptive-cta-desc">Hệ thống tự chọn câu phù hợp, xen kẽ câu mới và câu cần ôn.</div>
+        <div class="ac-desc" id="adaptive-cta-desc">Tự động cá nhân hoá lộ trình ôn tập — không cần tự nghĩ nên học gì, hệ thống lo phần đó.</div>
       </div>
       <svg class="ac-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
     </div>
@@ -1380,7 +1382,7 @@ function renderHome(){
 
   const sessionSize = Math.min(ADAPTIVE_SESSION_SIZE, QUESTIONS.length);
   document.getElementById('adaptive-cta-desc').textContent =
-    `Hệ thống tự chọn ~${sessionSize}/${QUESTIONS.length} câu phù hợp, xen kẽ câu mới và câu cần ôn.`;
+    `Tự động cá nhân hoá ~${sessionSize}/${QUESTIONS.length} câu mỗi phiên — ưu tiên đúng câu bạn cần ôn, không cần tự nghĩ nên học gì.`;
 
   let attemptedCount = 0;
   let totalPct = 0;
