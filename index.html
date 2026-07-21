@@ -656,7 +656,20 @@
   /* ---------- Popup ủng hộ tác giả (QR chuyển khoản) ---------- */
   .donate-modal-sheet{ text-align:center; border-radius:22px; max-width:360px; padding: 30px 24px calc(24px + env(safe-area-inset-bottom)); }
   .donate-emoji{ font-size:44px; line-height:1; margin-bottom:10px; }
-  .donate-qr-img{ width:100%; max-width:260px; border-radius:16px; margin-top:16px; box-shadow: var(--shadow-card); }
+  .donate-qr-img{ width:100%; max-width:260px; border-radius:16px; margin-top:16px; box-shadow: var(--shadow-card); cursor:zoom-in; }
+  .donate-actions{ display:flex; gap:10px; margin-top:14px; }
+  .donate-actions .btn{ flex:1; font-size:12px; padding:11px 8px; text-decoration:none; gap:5px; }
+  #donate-modal-close.disabled{ opacity:0.6; cursor:not-allowed; }
+
+  /* ---------- Xem QR phóng to ---------- */
+  .qr-lightbox{
+    position:fixed; inset:0; z-index:400;
+    background: rgba(10,10,16,0.92);
+    display:flex; align-items:center; justify-content:center;
+    padding:28px; cursor:zoom-out;
+  }
+  .qr-lightbox.hidden{ display:none; }
+  .qr-lightbox img{ width:100%; max-width:420px; border-radius:18px; box-shadow: 0 20px 60px -10px rgba(0,0,0,0.6); }
 
   /* ---------- Answer feedback popup ---------- */
   .answer-modal-sheet{
@@ -758,9 +771,19 @@
     <div class="donate-emoji">☕</div>
     <div class="welcome-title">Ủng hộ tác giả</div>
     <div class="welcome-subtitle">App miễn phí, không quảng cáo. Nếu thấy hữu ích, một ly cà phê ủng hộ sẽ là động lực để duy trì và cập nhật thêm câu hỏi mới.</div>
-    <img class="donate-qr-img" src="assets/donate-qr.jpg" alt="Mã QR chuyển khoản ủng hộ tác giả">
-    <button class="btn btn-primary" id="donate-modal-close" style="width:100%; margin-top:16px;">Đóng</button>
+    <img class="donate-qr-img" id="donate-qr-img" src="assets/donate-qr.jpg" alt="Mã QR chuyển khoản ủng hộ tác giả — chạm để phóng to">
+    <div class="donate-actions">
+      <a class="btn btn-ghost" href="assets/donate-qr.jpg" download="ung-ho-tran-tien-qr.jpg">⬇️ Tải mã QR</a>
+      <a class="btn btn-ghost" href="https://dl.vietqr.io/pay?app=bidv&ba=7102520837@bidv&tn=Ung%20ho%20app%20GDQP&bn=TRAN%20TIEN" target="_blank" rel="noopener noreferrer">⚡ Chuyển khoản nhanh</a>
+    </div>
+    <button class="btn btn-primary" id="donate-modal-close" style="width:100%; margin-top:10px;">
+      <span id="donate-modal-close-label">Đóng</span>
+    </button>
   </div>
+</div>
+
+<div id="qr-lightbox" class="qr-lightbox hidden">
+  <img id="qr-lightbox-img" src="assets/donate-qr.jpg" alt="Mã QR phóng to">
 </div>
 
 <div id="app">
@@ -1501,16 +1524,52 @@ document.getElementById('theme-toggle').addEventListener('click', () => {
 });
 applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light'); // đồng bộ icon với theme đã áp lúc đầu trang
 
-/* ---------- Popup chào mừng ---------- */
+/* ---------- Popup chào mừng -> nối tiếp popup ủng hộ tác giả ---------- */
 document.getElementById('welcome-modal-close').addEventListener('click', () => {
   document.getElementById('welcome-modal').classList.add('hidden');
+  openDonateModal(); // hiện popup ủng hộ ngay sau khi đóng popup chào mừng, không cần chờ vào trang chủ
 });
 
 /* ---------- Popup ủng hộ tác giả ---------- */
+const DONATE_MODAL_LOCK_MS = 3000;
+let donateModalUnlockTimer = null;
+let donateModalCountdownInterval = null;
+let donateModalLocked = false;
+
 function openDonateModal(){
   document.getElementById('donate-modal').classList.remove('hidden');
+  lockDonateModal();
+}
+function lockDonateModal(){
+  const closeBtn = document.getElementById('donate-modal-close');
+  const closeLabel = document.getElementById('donate-modal-close-label');
+  if(donateModalUnlockTimer){ clearTimeout(donateModalUnlockTimer); donateModalUnlockTimer = null; }
+  if(donateModalCountdownInterval){ clearInterval(donateModalCountdownInterval); donateModalCountdownInterval = null; }
+  donateModalLocked = true;
+  closeBtn.disabled = true;
+  closeBtn.classList.add('disabled');
+  let remainingSec = Math.ceil(DONATE_MODAL_LOCK_MS / 1000);
+  closeLabel.textContent = `Đóng (${remainingSec}s)`;
+  donateModalCountdownInterval = setInterval(() => {
+    remainingSec--;
+    if(remainingSec > 0){
+      closeLabel.textContent = `Đóng (${remainingSec}s)`;
+    } else {
+      clearInterval(donateModalCountdownInterval);
+      donateModalCountdownInterval = null;
+    }
+  }, 1000);
+  donateModalUnlockTimer = setTimeout(() => {
+    donateModalLocked = false;
+    closeBtn.disabled = false;
+    closeBtn.classList.remove('disabled');
+    closeLabel.textContent = 'Đóng';
+    if(donateModalCountdownInterval){ clearInterval(donateModalCountdownInterval); donateModalCountdownInterval = null; }
+    donateModalUnlockTimer = null;
+  }, DONATE_MODAL_LOCK_MS);
 }
 function closeDonateModal(){
+  if(donateModalLocked) return;
   document.getElementById('donate-modal').classList.add('hidden');
 }
 ['donate-link-1', 'donate-link-2'].forEach(id => {
@@ -1520,6 +1579,14 @@ function closeDonateModal(){
 document.getElementById('donate-modal-close').addEventListener('click', closeDonateModal);
 document.getElementById('donate-modal').addEventListener('click', (e) => {
   if(e.target.id === 'donate-modal') closeDonateModal();
+});
+
+/* ---------- Chạm vào QR để phóng to ---------- */
+document.getElementById('donate-qr-img').addEventListener('click', () => {
+  document.getElementById('qr-lightbox').classList.remove('hidden');
+});
+document.getElementById('qr-lightbox').addEventListener('click', () => {
+  document.getElementById('qr-lightbox').classList.add('hidden');
 });
 
 /* =========================================================
