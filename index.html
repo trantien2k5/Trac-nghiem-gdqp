@@ -1127,7 +1127,12 @@ function applyAdaptiveUpdate(hpId, id, isCorrect){
     // Càng gần mốc "đã thuộc" thì càng cần cách quãng xa hơn mới được tính (giống nguyên lý lặp lại
     // ngắt quãng: khoảng lặp tăng dần theo độ tự tin) — bước đầu (vừa sai xong) luôn tính ngay để còn
     // sửa sai nhanh, nhưng bước chốt "đã thuộc" đòi hỏi cách xa nhất để chắc là nhớ thật, không phải nhớ tạm.
-    const requiredGap = ADAPTIVE_MIN_GAP_STEPS[Math.min(stat.streak, ADAPTIVE_MIN_GAP_STEPS.length - 1)];
+    const baseGap = ADAPTIVE_MIN_GAP_STEPS[Math.min(stat.streak, ADAPTIVE_MIN_GAP_STEPS.length - 1)];
+    // Câu càng từng sai nhiều lần (khó nhớ với riêng người học này) thì càng cần cách xa hơn mới được
+    // công nhận là thuộc thật — tránh chốt "đã thuộc" quá sớm cho câu vốn hay quên, để công sức ôn tập
+    // dồn đúng chỗ cần (câu dễ thì thuộc nhanh, ít bị ôn lại thừa; câu khó thì được xác nhận chắc chắn hơn).
+    const lapsePenalty = 1 + Math.min(stat.wrongCount, 3) * 0.5; // 0 lần sai: x1 · mỗi lần sai thêm: +0.5, tối đa x2.5
+    const requiredGap = Math.round(baseGap * lapsePenalty);
     if(gapSinceLastAdvance >= requiredGap){
       stat.streak++;
       stat.lastAdvance = data.seq; // chỉ dời mốc khi thực sự tiến thêm 1 bước
@@ -1188,11 +1193,19 @@ function pickAdaptiveQuestions(hp){
   const groups = { new: [], wrong: [], shaky: [], mastered: [] };
   hp.questions.forEach((q, idx) => {
     const stat = adaptiveStatFor(data, q.id);
-    groups[adaptiveGroup(stat)].push({ idx, lastSeen: stat.lastSeen });
+    groups[adaptiveGroup(stat)].push({ idx, lastSeen: stat.lastSeen, wrongCount: stat.wrongCount });
   });
+  // Điểm rủi ro quên cho câu ĐÃ THUỘC: càng lâu chưa ôn lại + càng từng sai nhiều lần trước khi thuộc
+  // (mong manh hơn) thì càng cần ôn lại sớm. Câu chưa từng sai lần nào thì được "để yên" lâu hơn — dồn
+  // suất ôn ít ỏi (10%/phiên) đúng vào chỗ dễ quên nhất thay vì rải đều, giảm công ôn thừa cho câu đã chắc.
+  const masteredRisk = (item) => (data.seq - item.lastSeen) + item.wrongCount * 15;
   const order = ['new', 'wrong', 'shaky', 'mastered'];
   order.forEach(g => {
-    groups[g] = shuffle(groups[g]).sort((a, b) => a.lastSeen - b.lastSeen); // lâu chưa gặp lên trước
+    if(g === 'mastered'){
+      groups[g] = shuffle(groups[g]).sort((a, b) => masteredRisk(b) - masteredRisk(a));
+    } else {
+      groups[g] = shuffle(groups[g]).sort((a, b) => a.lastSeen - b.lastSeen); // lâu chưa gặp lên trước
+    }
   });
 
   const target = Math.min(ADAPTIVE_SESSION_SIZE, hp.questions.length);
