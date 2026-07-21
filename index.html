@@ -808,7 +808,7 @@
     </div>
     <div class="hp-list" id="hp-list"></div>
     <div class="app-footer">
-      <div class="footer-copyright">Ôn Tập Trắc Nghiệm GDQP<span class="dot"></span>© 2026 Trần Tiến</div>
+      <div class="footer-copyright">Ôn Tập Trắc Nghiệm GDQP<span class="dot"></span>© 2026 Trần Tiến<span class="dot"></span><span id="app-version-1"></span></div>
       <div class="footer-links">
         <a class="feedback-link" href="https://zalo.me/0382353110" target="_blank" rel="noopener noreferrer">💬 Báo lỗi / góp ý qua Zalo</a>
         <button class="feedback-link" id="donate-link-1" type="button">☕ Ủng hộ tác giả</button>
@@ -880,7 +880,7 @@
     <div class="stats-section-title">Hoặc chọn đề cụ thể</div>
     <div class="set-grid" id="set-grid"></div>
     <div class="app-footer">
-      <div class="footer-copyright">© 2026 Trần Tiến</div>
+      <div class="footer-copyright">© 2026 Trần Tiến<span class="dot"></span><span id="app-version-2"></span></div>
       <div class="footer-note">Dữ liệu lưu trên máy bạn (localStorage)</div>
       <div class="footer-links">
         <a class="feedback-link" href="https://zalo.me/0382353110" target="_blank" rel="noopener noreferrer">💬 Báo lỗi / góp ý qua Zalo</a>
@@ -1587,6 +1587,15 @@ document.getElementById('donate-qr-img').addEventListener('click', () => {
 });
 document.getElementById('qr-lightbox').addEventListener('click', () => {
   document.getElementById('qr-lightbox').classList.add('hidden');
+});
+
+// Số phiên bản hiển thị ở footer (chỉ để người dùng/tác giả biết đang chạy bản nào khi báo lỗi) — tăng
+// thủ công mỗi lần đổi đáng kể. Việc phát hiện có bản mới hay không KHÔNG dựa vào số này (xem khối
+// PHÁT HIỆN BẢN CẬP NHẬT MỚI bên dưới, tự so nội dung thật của index.html nên không thể quên cập nhật).
+const APP_VERSION = 'v1.0';
+['app-version-1', 'app-version-2'].forEach(id => {
+  const el = document.getElementById(id);
+  if(el) el.textContent = APP_VERSION;
 });
 
 /* =========================================================
