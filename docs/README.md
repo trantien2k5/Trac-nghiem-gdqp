@@ -1,4 +1,3 @@
-Tài liệu PDF gốc dùng làm nguồn tham khảo để trích xuất câu hỏi (không được app sử dụng trực tiếp khi chạy).
-
-- `GDQP HP1 150 câu.pdf`, `GDQP HP2 150 câu.pdf` — PDF dạng văn bản, đã trích xuất đầy đủ vào `data/hp1.js` và `data/hp2.js`.
-- `GDQP HP3 150CÂU.pdf` — PDF dạng ảnh scan, chưa trích xuất được (cần OCR hoặc nhập tay).
+Các PDF gốc (HP1, HP2, HP3) đã được xoá sau khi trích xuất xong sang
+`data/hp1.js` và `data/hp2.js` — không còn dùng làm nguồn tham khảo trong repo
+nữa. HP3 không được trích xuất (không dùng trong app) nên PDF gốc cũng đã xoá.
