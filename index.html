@@ -1229,12 +1229,18 @@ function pickAdaptiveQuestions(hp){
     }
   }
 
-  // Xen kẽ (round-robin, thứ tự nhóm ngẫu nhiên mỗi phiên) 3 nhóm cần ưu tiên — hay sai/chưa làm/chưa
-  // chắc (đang học dở dang) — để chúng luôn ở phần ĐẦU phiên. Nhóm "đã thuộc" bị đẩy xuống CUỐI cùng,
-  // xem như tạm gác lại: nếu phiên bị dừng giữa chừng thì phần đã bỏ dở gần như chắc chắn là câu đã
-  // thuộc (ít quan trọng nhất lúc này), còn thời gian học được dồn hết cho câu thực sự cần ôn trước.
-  const priorityOrder = ['new', 'wrong', 'shaky'];
-  const buckets = shuffle(priorityOrder.map(g => picked[g].slice()));
+  // Xen kẽ CÓ TRỌNG SỐ 3 nhóm cần ưu tiên để luôn ở phần ĐẦU phiên, mức khẩn cấp giảm dần đúng thứ tự
+  // ADAPTIVE_GROUP_SORT_RANK (hay sai > chưa làm > chưa chắc): câu hay sai vừa bị reset streak, để càng
+  // lâu càng dễ quên lại từ đầu nên cần sửa gấp nhất; câu chưa làm cần được giới thiệu; câu chưa chắc
+  // (đang học dở dang, streak > 0) đỡ khẩn cấp hơn 2 nhóm kia vì đã có ít nhất 1 lần đúng gần đây.
+  // Trọng số quyết định TẦN SUẤT xuất hiện trong vòng xen kẽ (không phải xếp cứng theo khối), nên vẫn
+  // giữ được cảm giác trộn lẫn tự nhiên thay vì dồn cục toàn "hay sai" rồi mới đến nhóm khác.
+  const priorityWeight = { wrong: 3, new: 2, shaky: 1 };
+  const weightedRefs = [];
+  Object.keys(priorityWeight).forEach(g => {
+    for(let i = 0; i < priorityWeight[g]; i++) weightedRefs.push(picked[g]); // cùng tham chiếu mảng -> shift() dùng chung, không nhân bản câu
+  });
+  const buckets = shuffle(weightedRefs);
   const interleaved = [];
   let any = true;
   while(any){
@@ -1243,7 +1249,10 @@ function pickAdaptiveQuestions(hp){
       if(b.length){ interleaved.push(b.shift()); any = true; }
     }
   }
-  const masteredTail = shuffle(picked.mastered.slice());
+  // Nhóm "đã thuộc" ở cuối phiên: vẫn sắp lâu-chưa-ôn-lên-trước (đã tính sẵn ở groups[g].sort phía trên)
+  // thay vì xáo ngẫu nhiên hoàn toàn, để nếu phiên có chạm tới đoạn củng cố này thì ôn đúng câu có nguy
+  // cơ quên nhất trước.
+  const masteredTail = picked.mastered.slice();
   return interleaved.concat(masteredTail).map(x => x.idx);
 }
 
