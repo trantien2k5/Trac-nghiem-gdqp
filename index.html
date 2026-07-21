@@ -2071,21 +2071,28 @@ function playWrongSound(){
 
 function selectAnswer(optText){
   const qIdx = qOrder[currentIndex];
-  // Lần đầu bấm vào Ô NÀY (slot) — khác với isFirstAttempt (lần đầu hỏi CÂU này trong cả phiên).
-  // Một câu có thể xuất hiện lại ở slot khác (do trả lời sai, xem scheduleRepeat) — mỗi lần gặp lại
-  // đó vẫn phải được ghi vào kho độ thuộc, nếu không cơ chế "gặp lại sau vài câu" sẽ vô nghĩa.
-  const isFirstClickOnSlot = slotAnswers[currentIndex] === null;
+  const isExam = currentMode === 'exam';
+  // Giá trị TRƯỚC khi ghi đè — dùng để biết đây là lần đầu chọn hay đổi ý (Thi thử cho phép đổi ý tự do
+  // trước khi rời câu/nộp bài, xem renderQuestion). Khác với isFirstAttempt (lần đầu hỏi CÂU này trong
+  // cả phiên, dùng riêng cho thống kê tổng — xem bên dưới).
+  const previousSlotAnswer = slotAnswers[currentIndex];
+  const answerChangedOnSlot = previousSlotAnswer !== optText;
   slotAnswers[currentIndex] = optText;
   const isFirstAttempt = firstAnswers[qIdx] === null;
-  if(isFirstAttempt) firstAnswers[qIdx] = optText;
+  // Thi thử: điểm số phải tính theo lựa chọn CUỐI CÙNG trước khi nộp bài, không phải lần bấm đầu tiên —
+  // nếu chỉ khoá theo lần bấm đầu, người dùng đổi đáp án trên màn hình nhưng điểm vẫn âm thầm tính theo
+  // lựa chọn cũ (bug thật đã gặp và sửa). Luyện tập không bị ảnh hưởng vì mỗi slot chỉ bấm được 1 lần.
+  if(isExam || isFirstAttempt) firstAnswers[qIdx] = optText;
   appearCount[qIdx]++;
   const item = currentQuestions[qIdx];
   const isCorrect = optText === item.answer;
   if(isFirstAttempt) logAnswer(isCorrect);
-  // Ghi độ thuộc mỗi lần THỰC SỰ gặp lại câu (mỗi slot mới), cho mọi chế độ (Luyện tập/Thi thử/Ôn câu
-  // sai/Thông minh) vào cùng 1 kho chung theo id câu. Chặn theo slot (không phải theo mỗi cú click) để
-  // tránh việc đổi đáp án nhiều lần ở chế độ thi thử bị tính lặp nhiều lần cho cùng 1 lần gặp.
-  if(isFirstClickOnSlot && item._qid) applyAdaptiveUpdate(currentHp.id, item._qid, isCorrect);
+  // Ghi độ thuộc mỗi khi đáp án của slot này THỰC SỰ thay đổi (lần đầu chọn, hoặc đổi ý ở Thi thử), cho
+  // mọi chế độ (Luyện tập/Thi thử/Ôn câu sai/Thông minh) vào cùng 1 kho chung theo id câu. Chặn theo "có
+  // đổi giá trị hay không" (không phải mỗi cú click) để bấm lại đúng đáp án đang chọn không bị tính thêm,
+  // nhưng đổi sang đáp án khác vẫn được ghi nhận đúng theo lựa chọn mới nhất — cùng lỗi và cách sửa như
+  // firstAnswers ở trên (trước đây chặn theo "chỉ lần bấm đầu tiên trên slot", bỏ sót mọi lần đổi ý).
+  if(answerChangedOnSlot && item._qid) applyAdaptiveUpdate(currentHp.id, item._qid, isCorrect);
   if(isCorrect){
     mastered[qIdx] = true;
   } else {
