@@ -1262,9 +1262,9 @@ function pickAdaptiveQuestions(hp){
       if(b.length){ interleaved.push(b.shift()); any = true; }
     }
   }
-  // Nhóm "đã thuộc" ở cuối phiên: vẫn sắp lâu-chưa-ôn-lên-trước (đã tính sẵn ở groups[g].sort phía trên)
-  // thay vì xáo ngẫu nhiên hoàn toàn, để nếu phiên có chạm tới đoạn củng cố này thì ôn đúng câu có nguy
-  // cơ quên nhất trước.
+  // Nhóm "đã thuộc" ở cuối phiên: giữ nguyên thứ tự rủi ro-quên-cao-lên-trước (đã sắp sẵn ở
+  // groups.mastered.sort phía trên, xem masteredRisk) thay vì xáo ngẫu nhiên hoàn toàn, để nếu phiên có
+  // chạm tới đoạn củng cố này thì ôn đúng câu mong manh/lâu-chưa-ôn nhất trước.
   const masteredTail = picked.mastered.slice();
   return interleaved.concat(masteredTail).map(x => x.idx);
 }

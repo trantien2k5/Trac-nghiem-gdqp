@@ -121,7 +121,12 @@ function applyAdaptiveUpdate(hpId, id, isCorrect){
   data.seq = (data.seq || 0) + 1;
   if(isCorrect){
     stat.correctCount++;
-    const requiredGap = ADAPTIVE_MIN_GAP_STEPS[Math.min(stat.streak, ADAPTIVE_MIN_GAP_STEPS.length - 1)];
+    const baseGap = ADAPTIVE_MIN_GAP_STEPS[Math.min(stat.streak, ADAPTIVE_MIN_GAP_STEPS.length - 1)];
+    // Phạt theo lịch sử sai (lapse) của CHÍNH câu này: câu càng từng sai nhiều lần thì càng cần cách xa
+    // hơn mới được công nhận "đã thuộc" thật — câu dễ (chưa từng sai) thuộc nhanh với ngưỡng gốc, câu
+    // khó (hay quên) phải chứng minh chắc hơn mới được chốt thuộc.
+    const lapsePenalty = 1 + Math.min(stat.wrongCount, 3) * 0.5; // 0 lần sai: x1 · mỗi lần sai thêm: +0.5, tối đa x2.5
+    const requiredGap = Math.round(baseGap * lapsePenalty);
     if(gapSinceLastAdvance >= requiredGap){
       stat.streak++;
       stat.lastAdvance = data.seq; // chỉ dời mốc khi thực sự tiến thêm 1 bước
@@ -143,6 +148,13 @@ function applyAdaptiveUpdate(hpId, id, isCorrect){
 lần trả lời hiện tại vào khoảng cách, làm ngưỡng thực tế thấp hơn ý định 1
 bậc). Đây là lỗi off-by-one thực tế đã gặp và sửa trong quá trình phát triển.
 
+**Vì sao có `lapsePenalty`:** mục tiêu là tối ưu "ít công sức nhất mà nhớ hiệu
+quả nhất" — nếu mọi câu dùng chung một ngưỡng cố định thì câu dễ (không bao
+giờ sai) và câu khó (hay quên đi quên lại) được đối xử y hệt nhau, lãng phí
+công ôn cho câu dễ và chốt "đã thuộc" quá sớm cho câu khó (rồi lại quên).
+`wrongCount` vốn đã có sẵn trong dữ liệu (không cần thêm trường mới), chỉ cần
+dùng nó để nhân hệ số vào ngưỡng cách quãng.
+
 ---
 
 ## 3. Luyện tập thông minh — thuật toán chọn câu (adaptive selection)
@@ -159,9 +171,12 @@ const ADAPTIVE_RATIOS = { new: 0.4, wrong: 0.3, shaky: 0.2, mastered: 0.1 };
 
 1. Gộp toàn bộ câu hỏi của học phần vào 4 nhóm (`new`/`wrong`/`shaky`/`mastered`)
    theo `adaptiveGroup`.
-2. Mỗi nhóm được xáo trộn ngẫu nhiên rồi sắp theo `lastSeen` tăng dần (câu
-   lâu chưa xuất hiện được ưu tiên lên đầu) — vừa có yếu tố ngẫu nhiên vừa
-   đảm bảo công bằng xoay vòng.
+2. Mỗi nhóm được xáo trộn ngẫu nhiên rồi sắp xếp:
+   - `new`/`wrong`/`shaky`: sắp theo `lastSeen` tăng dần (câu lâu chưa xuất
+     hiện được ưu tiên lên đầu) — vừa có yếu tố ngẫu nhiên vừa đảm bảo công
+     bằng xoay vòng.
+   - `mastered`: sắp theo **điểm rủi ro quên** giảm dần, không dùng thuần
+     `lastSeen` — xem công thức bên dưới.
 3. Tính chỉ tiêu (`quota`) mỗi nhóm = `round(target * tỉ lệ)`, phần dư do làm
    tròn được cộng bù vào nhóm `new`. Với `target = 30` thì các chỉ tiêu này
    luôn tròn số (12/9/6/3), không bao giờ lệch tỉ lệ.
@@ -174,9 +189,32 @@ const ADAPTIVE_RATIOS = { new: 0.4, wrong: 0.3, shaky: 0.2, mastered: 0.1 };
      dù người dùng luyện tập đều đặn (bug thực tế đã gặp và sửa).
    - Chỉ khi cả `wrong` và `shaky` cũng cạn (gần như toàn bộ học phần đã
      thuộc) mới lấy thêm từ `new`/`mastered`.
-5. Trộn thứ tự các nhóm đã chọn theo kiểu round-robin (xen kẽ từng câu một
-   nhóm) để phiên học không bị dồn cục "toàn câu mới" rồi mới đến "toàn câu
-   ôn", mà rải đều.
+5. **Xen kẽ có trọng số** 3 nhóm cần ưu tiên (`wrong`/`new`/`shaky`, trọng số
+   `3:2:1`) để luôn nằm ở **đầu** phiên, mức khẩn cấp giảm dần đúng thứ tự:
+   câu hay sai (vừa mất streak, dễ quên lại nếu để lâu) > câu mới (cần được
+   giới thiệu) > câu chưa chắc (đã có ít nhất 1 lần đúng gần đây, đỡ khẩn cấp
+   hơn). Trọng số quyết định **tần suất** xuất hiện trong vòng xen kẽ (không
+   xếp cứng theo khối liền nhau), nên vẫn có cảm giác trộn tự nhiên thay vì
+   dồn cục toàn "hay sai" rồi mới tới nhóm khác.
+6. Nhóm `mastered` bị đẩy hẳn xuống **cuối** phiên (không trộn chung với 3
+   nhóm trên) — xem như tạm gác lại: nếu phiên bị dừng giữa chừng, phần bỏ dở
+   gần như chắc chắn chỉ là câu đã thuộc (ít quan trọng nhất lúc này), còn
+   thời gian học được dồn hết cho câu thực sự cần ôn trước. Thứ tự bên trong
+   đoạn này giữ nguyên thứ tự rủi ro-quên-cao-lên-trước đã sắp ở bước 2.
+
+**Điểm rủi ro quên cho nhóm `mastered`** (`masteredRisk`, càng cao càng cần
+ôn lại sớm dù đã "thuộc"):
+
+```js
+const masteredRisk = (item) => (data.seq - item.lastSeen) + item.wrongCount * 15;
+```
+
+Kết hợp 2 yếu tố: càng lâu chưa ôn lại (`data.seq - lastSeen` lớn) và càng
+từng sai nhiều lần trước khi đạt "thuộc" (`wrongCount` lớn, tức là kiến thức
+"mong manh" hơn) thì càng được ưu tiên vào suất ôn hiếm hoi (chỉ ~10%/phiên)
+dành cho nhóm này. Câu chưa từng sai lần nào được "để yên" lâu hơn, tránh tốn
+công ôn lại thứ đã chắc chắn — đúng tinh thần "ít công sức nhất, hiệu quả ghi
+nhớ cao nhất".
 
 Kết quả trả về là mảng **chỉ số câu hỏi** (index trong `hp.questions`) theo
 đúng thứ tự sẽ hiển thị trong phiên.
@@ -319,8 +357,9 @@ dùng cho một bộ câu hỏi trắc nghiệm khác:
     app luyện tập nào cần "chuỗi ngày học" kiểu Duolingo.
 - Các hằng số (`ADAPTIVE_MASTERED_STREAK`, `ADAPTIVE_MIN_GAP_STEPS`,
   `ADAPTIVE_SESSION_SIZE`, `ADAPTIVE_RATIOS`, `MAX_APPEARANCES`,
-  `REPEAT_GAP`, `SESSION_GROWTH_MULT`) đều được đặt tập trung, có thể chỉnh
-  theo độ khó/độ dài bộ câu hỏi mới mà không cần sửa logic.
+  `REPEAT_GAP`, `SESSION_GROWTH_MULT`, hệ số `lapsePenalty` và trọng số
+  `priorityWeight` trong `pickAdaptiveQuestions`) đều được đặt tập trung, có
+  thể chỉnh theo độ khó/độ dài bộ câu hỏi mới mà không cần sửa logic.
 - Toàn bộ state chỉ ở `localStorage`, không có backend/đồng bộ nhiều thiết
   bị — nếu cần đồng bộ, đây là điểm cần thêm lớp lưu trữ mới (ví dụ sync lên
   server), giữ nguyên phần logic tính toán.
