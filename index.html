@@ -516,6 +516,14 @@
   .option .mark{ flex-shrink:0; width:20px; height:20px; margin-top:2px; }
 
   .option.selected-pending{ border-color: var(--indigo); background: var(--indigo-glow); }
+  .option.locked{ cursor:default; }
+  .option.correct-answer{ border-color: var(--green); background: var(--green-bg); }
+  .option.correct-answer .letter{ background: var(--green); border-color: var(--green); color:#fff; }
+  .option.correct-answer .mark{ color: var(--green); }
+  .option.wrong-pick{ border-color: var(--red); background: var(--red-bg); }
+  .option.wrong-pick .letter{ background: var(--red); border-color: var(--red); color:#fff; }
+  .option.wrong-pick .mark{ color: var(--red); }
+  .option .mark svg{ width:20px; height:20px; display:block; }
 
   .explain-box{
     margin: 10px 16px 0;
@@ -751,40 +759,20 @@
   .qr-lightbox.hidden{ display:none; }
   .qr-lightbox img{ width:100%; max-width:420px; border-radius:18px; box-shadow: 0 20px 60px -10px rgba(0,0,0,0.6); }
 
-  /* ---------- Answer feedback popup ---------- */
-  .answer-modal-sheet{
-    text-align:center; padding-top: 28px;
-    border-radius: 20px;
-    max-width: 380px;
+  /* ---------- Giải thích popup (chỉ hiện khi chủ động bấm "Xem giải thích") ---------- */
+  .explain-modal-sheet{
+    text-align:left; border-radius: 20px; max-width: 380px;
     box-shadow: 0 20px 50px -12px rgba(20,22,42,0.35);
   }
-  .answer-modal-icon{
-    width:60px; height:60px; margin: 0 auto 14px;
-    border-radius:50%; display:flex; align-items:center; justify-content:center;
+  .explain-modal-title{ font-size:16px; font-weight:800; letter-spacing:-0.01em; margin-bottom:4px; }
+  .explain-modal-sheet .explain-box{ margin-left:0; margin-right:0; }
+
+  /* ---------- Đáp án đúng/sai tô ngay trên 4 lựa chọn ---------- */
+  .practice-actions{
+    display:flex; gap:10px; padding: 4px 16px calc(20px + env(safe-area-inset-bottom));
   }
-  .answer-modal-icon svg{ width:30px; height:30px; }
-  .answer-modal-icon.ok{ background: var(--green-bg); color: var(--green); }
-  .answer-modal-icon.bad{ background: var(--red-bg); color: var(--red); }
-  .answer-modal-title{ font-size:19px; font-weight:800; letter-spacing:-0.01em; }
-  .answer-modal-title.ok-text{ color: var(--green); }
-  .answer-modal-title.bad-text{ color: var(--red); }
-  .answer-pick-blocks{ display:flex; flex-direction:column; gap:8px; margin-top:14px; text-align:left; }
-  .answer-pick-block{
-    border-radius: var(--radius-sm);
-    padding: 10px 14px;
-    display:flex; flex-direction:column; gap:2px;
-  }
-  .answer-pick-block .lbl{
-    font-size:11px; font-weight:800; letter-spacing:0.04em; text-transform:uppercase;
-  }
-  .answer-pick-block .val{ font-size:14.5px; font-weight:600; line-height:1.4; }
-  .answer-pick-block.wrong-block{ background: var(--red-bg); }
-  .answer-pick-block.wrong-block .lbl{ color: var(--red); }
-  .answer-pick-block.wrong-block .val{ color: var(--red); }
-  .answer-pick-block.correct-block{ background: var(--green-bg); }
-  .answer-pick-block.correct-block .lbl{ color: var(--green); }
-  .answer-pick-block.correct-block .val{ color: var(--green); }
-  .answer-modal-sheet .explain-box{ text-align:left; margin-top:16px; }
+  .practice-actions #btn-show-explain{ flex: 0 0 auto; white-space:nowrap; }
+  .practice-actions #btn-practice-continue{ flex:1; }
 
   /* ---------- Navigator modal ---------- */
   .nav-modal-sheet{
@@ -1123,6 +1111,11 @@
 
     <div class="options" id="options-container"></div>
 
+    <div class="practice-actions hidden" id="practice-actions">
+      <button class="btn btn-ghost" id="btn-show-explain" type="button">💡 Xem giải thích</button>
+      <button class="btn btn-primary" id="btn-practice-continue" type="button">Tiếp tục</button>
+    </div>
+
     <div class="quiz-nav" id="quiz-nav">
       <button class="btn btn-ghost" id="btn-prev">Trước</button>
       <button class="btn btn-primary" id="btn-next" disabled>Tiếp theo</button>
@@ -1252,20 +1245,12 @@
     </div>
   </div>
 
-  <!-- ============ ANSWER FEEDBACK POPUP ============ -->
-  <div id="answer-modal" class="modal-overlay center-modal hidden">
-    <div class="modal-sheet answer-modal-sheet">
-      <div class="answer-modal-icon" id="answer-modal-icon"></div>
-      <div class="answer-modal-title" id="answer-modal-title">Chính xác!</div>
-      <div class="answer-pick-blocks">
-        <div class="answer-pick-block wrong-block hidden" id="answer-modal-wrong-pick"><span class="lbl">Bạn đã chọn</span><span class="val" id="answer-modal-wrong-pick-val"></span></div>
-        <div class="answer-pick-block correct-block hidden" id="answer-modal-correct"><span class="lbl">Đáp án đúng</span><span class="val" id="answer-modal-correct-val"></span></div>
-      </div>
-      <div class="explain-box hidden" id="answer-modal-explain"><span class="explain-icon">💡</span><span><span class="explain-label" id="answer-modal-explain-label">Giải thích:</span><span id="answer-modal-explain-text"></span></span></div>
-      <button class="btn btn-primary" id="answer-modal-next" style="width:100%; margin-top:16px;">
-        <span id="answer-modal-next-label">Tiếp tục</span>
-        <span class="btn-spinner hidden" id="answer-modal-next-spinner"></span>
-      </button>
+  <!-- ============ GIẢI THÍCH POPUP ============ -->
+  <div id="explain-modal" class="modal-overlay center-modal hidden">
+    <div class="modal-sheet explain-modal-sheet">
+      <div class="explain-modal-title" id="explain-modal-title">💡 Giải thích</div>
+      <div class="explain-box" id="explain-modal-box"><span class="explain-icon">💡</span><span><span class="explain-label" id="explain-modal-label">Giải thích:</span><span id="explain-modal-text"></span></span></div>
+      <button class="btn btn-primary" id="explain-modal-close" style="width:100%; margin-top:16px;">Đóng</button>
     </div>
   </div>
 
@@ -2505,8 +2490,15 @@ function renderQuestion(){
       }
       opt.addEventListener('click', () => selectAnswer(optText));
     } else if(alreadyAnswered){
-      // Luyện tập: đúng/sai + giải thích đã hiện trong popup, thẻ câu hỏi giữ nguyên trạng thái trung tính.
-      if(optText === slotAnswers[currentIndex]) opt.classList.add('selected-pending');
+      // Luyện tập: tô thẳng đúng/sai lên 4 lựa chọn — xanh cho đáp án đúng, đỏ cho lựa chọn sai của mình.
+      opt.classList.add('locked');
+      if(optText === item.answer){
+        opt.classList.add('correct-answer');
+        opt.querySelector('.mark').innerHTML = checkIcon();
+      } else if(optText === slotAnswers[currentIndex]){
+        opt.classList.add('wrong-pick');
+        opt.querySelector('.mark').innerHTML = xIcon();
+      }
     } else {
       opt.addEventListener('click', () => selectAnswer(optText));
     }
@@ -2515,11 +2507,20 @@ function renderQuestion(){
 
   const nextBtn = document.getElementById('btn-next');
   nextBtn.disabled = isExam ? false : !alreadyAnswered;
+  const practiceActions = document.getElementById('practice-actions');
   if(isExam){
     document.getElementById('btn-prev').disabled = currentIndex === 0;
     nextBtn.textContent = currentIndex === qOrder.length-1 ? 'Nộp bài' : 'Tiếp theo';
+    practiceActions.classList.add('hidden');
   } else {
     nextBtn.textContent = currentIndex === qOrder.length-1 ? 'Hoàn thành' : 'Tiếp tục';
+    practiceActions.classList.toggle('hidden', !alreadyAnswered);
+    if(alreadyAnswered){
+      const isCorrect = slotAnswers[currentIndex] === item.answer;
+      const tip = isCorrect ? item.explain : (item.wrongTip || item.explain);
+      document.getElementById('btn-show-explain').classList.toggle('hidden', !tip);
+      document.getElementById('btn-practice-continue').textContent = currentIndex === qOrder.length-1 ? 'Hoàn thành' : 'Tiếp tục';
+    }
   }
 
   if(isExam){
@@ -2626,101 +2627,30 @@ function selectAnswer(optText){
   renderQuestion();
   if(currentMode === 'practice'){
     isCorrect ? playCorrectSound() : playWrongSound();
-    showAnswerPopup(isCorrect, item, optText);
   }
 }
 
-let popupLocked = false;
-let popupUnlockTimer = null;
-let popupCountdownInterval = null;
-const WRONG_POPUP_LOCK_MS = 2000;
-
-function showAnswerPopup(isCorrect, item, pickedText){
-  const icon = document.getElementById('answer-modal-icon');
-  icon.className = 'answer-modal-icon ' + (isCorrect ? 'ok' : 'bad');
-  icon.innerHTML = isCorrect ? checkIcon() : xIcon();
-
-  const title = document.getElementById('answer-modal-title');
-  title.textContent = isCorrect ? 'Chính xác!' : 'Chưa đúng';
-  title.className = 'answer-modal-title ' + (isCorrect ? 'ok-text' : 'bad-text');
-
-  const wrongPickLine = document.getElementById('answer-modal-wrong-pick');
-  const correctLine = document.getElementById('answer-modal-correct');
-  if(!isCorrect){
-    document.getElementById('answer-modal-wrong-pick-val').textContent = pickedText;
-    wrongPickLine.classList.remove('hidden');
-    document.getElementById('answer-modal-correct-val').textContent = item.answer;
-    correctLine.classList.remove('hidden');
-  } else {
-    wrongPickLine.classList.add('hidden');
-    correctLine.classList.add('hidden');
-  }
-
+function showExplainModal(){
+  const qIdx = qOrder[currentIndex];
+  const item = currentQuestions[qIdx];
+  const isCorrect = slotAnswers[currentIndex] === item.answer;
   const tip = isCorrect ? item.explain : (item.wrongTip || item.explain);
-  const explainBox = document.getElementById('answer-modal-explain');
-  if(tip){
-    document.getElementById('answer-modal-explain-label').textContent = isCorrect ? 'Giải thích:' : 'Vì sao sai:';
-    document.getElementById('answer-modal-explain-text').textContent = tip;
-    explainBox.classList.remove('hidden');
-    explainBox.classList.toggle('wrong-tip', !isCorrect);
-  } else {
-    explainBox.classList.add('hidden');
-  }
-
-  const nextBtn = document.getElementById('answer-modal-next');
-  const nextLabel = document.getElementById('answer-modal-next-label');
-  const nextSpinner = document.getElementById('answer-modal-next-spinner');
-  nextBtn.classList.remove('hidden'); // luôn hiện nút — khi sai thì khoá + đếm ngược thay vì ẩn hẳn
-  if(popupUnlockTimer){ clearTimeout(popupUnlockTimer); popupUnlockTimer = null; }
-  if(popupCountdownInterval){ clearInterval(popupCountdownInterval); popupCountdownInterval = null; }
-  if(isCorrect){
-    popupLocked = false;
-    nextBtn.disabled = false;
-    nextSpinner.classList.add('hidden');
-    nextLabel.textContent = 'Tiếp tục';
-  } else {
-    // Sai: hiện nút Tiếp tục nhưng khoá + đếm ngược rõ số giây, buộc đọc kỹ giải thích trước khi qua câu.
-    popupLocked = true;
-    nextBtn.disabled = true;
-    nextSpinner.classList.remove('hidden');
-    let remainingSec = Math.ceil(WRONG_POPUP_LOCK_MS / 1000);
-    nextLabel.textContent = `Xem kĩ lại (${remainingSec}s)`;
-    popupCountdownInterval = setInterval(() => {
-      remainingSec--;
-      if(remainingSec > 0){
-        nextLabel.textContent = `Xem kĩ lại (${remainingSec}s)`;
-      } else {
-        clearInterval(popupCountdownInterval);
-        popupCountdownInterval = null;
-      }
-    }, 1000);
-    popupUnlockTimer = setTimeout(() => {
-      popupLocked = false;
-      nextBtn.disabled = false;
-      nextSpinner.classList.add('hidden');
-      nextLabel.textContent = 'Tiếp tục';
-      if(popupCountdownInterval){ clearInterval(popupCountdownInterval); popupCountdownInterval = null; }
-      popupUnlockTimer = null;
-    }, WRONG_POPUP_LOCK_MS);
-  }
-
-  document.getElementById('answer-modal').classList.remove('hidden');
+  if(!tip) return;
+  document.getElementById('explain-modal-title').textContent = isCorrect ? '💡 Giải thích' : '💡 Vì sao sai';
+  document.getElementById('explain-modal-label').textContent = isCorrect ? 'Giải thích:' : 'Vì sao sai:';
+  document.getElementById('explain-modal-text').textContent = tip;
+  document.getElementById('explain-modal-box').classList.toggle('wrong-tip', !isCorrect);
+  document.getElementById('explain-modal').classList.remove('hidden');
 }
-function closeAnswerPopup(){
-  document.getElementById('answer-modal').classList.add('hidden');
+function closeExplainModal(){
+  document.getElementById('explain-modal').classList.add('hidden');
 }
-document.getElementById('answer-modal-next').addEventListener('click', () => {
-  if(popupLocked) return;
-  closeAnswerPopup();
-  advanceQuestion();
+document.getElementById('btn-show-explain').addEventListener('click', showExplainModal);
+document.getElementById('explain-modal-close').addEventListener('click', closeExplainModal);
+document.getElementById('explain-modal').addEventListener('click', (e) => {
+  if(e.target.id === 'explain-modal') closeExplainModal();
 });
-document.getElementById('answer-modal').addEventListener('click', (e) => {
-  if(popupLocked) return;
-  if(e.target.id === 'answer-modal'){
-    closeAnswerPopup();
-    advanceQuestion();
-  }
-});
+document.getElementById('btn-practice-continue').addEventListener('click', advanceQuestion);
 
 function advanceQuestion(){
   if(currentIndex < qOrder.length - 1){
