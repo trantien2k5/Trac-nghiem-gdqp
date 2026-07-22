@@ -2512,6 +2512,9 @@ function scheduleRepeat(qIdx, gap){
   slotAnswers.splice(insertPos, 0, null);
   slotIsRepeat.splice(insertPos, 0, true);
   slotIsPriority.splice(insertPos, 0, false);
+  // Đảo lại vị trí 4 đáp án cho lần gặp lại này — tránh việc chỉ nhớ "đáp án nằm ở vị trí C" từ lần
+  // trước thay vì thực sự nhớ nội dung, làm mất tác dụng của việc ôn lại câu sai.
+  currentQuestions[qIdx].options = shuffle(currentQuestions[qIdx].options);
 }
 
 function renderQuestion(){
