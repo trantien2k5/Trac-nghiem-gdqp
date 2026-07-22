@@ -2811,13 +2811,24 @@ document.getElementById('confirm-modal').addEventListener('click', (e) => {
   if(e.target.id === 'confirm-modal') closeConfirmModal();
 });
 document.getElementById('modal-confirm').addEventListener('click', () => {
-  stopTimer();
-  // Độ thuộc từng câu đã trả lời đã lưu ngay lúc trả lời (applyAdaptiveUpdate) rồi, không cần lưu lại
-  // ở đây — chỉ còn thời gian đã học dở dang là chưa được tính, ghi nốt vào thống kê trước khi thoát.
-  logSessionTime(Date.now() - quizStartTime);
   closeConfirmModal();
-  showScreen('home');
-  renderHome();
+  // Độ thuộc từng câu đã trả lời đã lưu ngay lúc trả lời (applyAdaptiveUpdate) rồi, không phụ thuộc có
+  // xem được màn tổng kết hay không — phiên học thông minh/ôn câu sai/bộ câu riêng sau này vẫn tự động
+  // ưu tiên đúng những câu vừa sai ở đây. Ở ĐÂY chỉ là hiển thị: các phiên này không gắn với 1 "đề" cụ
+  // thể để lưu điểm/số lần làm nên thoát giữa chừng vẫn cho xem tổng kết những câu ĐÃ LÀM (thay vì mất
+  // trắng, không thấy gì) — thu hẹp mảng lại đúng số câu đã làm rồi tái dùng luồng finishQuiz() sẵn có.
+  const attemptedCount = currentIndex + (slotAnswers[currentIndex] !== null ? 1 : 0);
+  if((adaptiveSessionActive || reviewSessionActive || specialSessionActive) && attemptedCount > 0){
+    const attemptedQIdx = qOrder.slice(0, attemptedCount);
+    currentQuestions = attemptedQIdx.map(qIdx => currentQuestions[qIdx]);
+    firstAnswers = attemptedQIdx.map(qIdx => firstAnswers[qIdx]);
+    finishQuiz();
+  } else {
+    stopTimer();
+    logSessionTime(Date.now() - quizStartTime);
+    showScreen('home');
+    renderHome();
+  }
 });
 
 /* =========================================================
