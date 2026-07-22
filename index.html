@@ -652,6 +652,14 @@
     40%{ opacity:1; transform:scale(1.15); }
   }
   .maintenance-footer{ font-size:12.5px; color: var(--text-faint); }
+  .maintenance-unlock{ display:flex; gap:8px; margin-top:26px; }
+  .maintenance-pass-input{
+    flex:1; min-width:0; padding:11px 14px; border-radius: var(--radius-sm);
+    border:1px solid var(--border); background: var(--bg-elev); color: var(--text);
+    font-size:14px; font-family:inherit;
+  }
+  .maintenance-unlock .btn{ padding:11px 16px; font-size:13.5px; flex-shrink:0; }
+  .maintenance-pass-error{ font-size:12.5px; color: var(--red); margin-top:8px; }
   .modal-sheet{
     width:100%; max-width:560px;
     background: var(--bg-elev);
@@ -807,6 +815,11 @@
     <p class="maintenance-message" id="maintenance-message"></p>
     <div class="maintenance-dots"><span></span><span></span><span></span></div>
     <p class="maintenance-footer">Cảm ơn bạn đã kiên nhẫn chờ đợi 🙏</p>
+    <div class="maintenance-unlock">
+      <input type="password" id="maintenance-pass-input" class="maintenance-pass-input" placeholder="Mã truy cập thử nghiệm" inputmode="numeric" autocomplete="off">
+      <button class="btn btn-primary" id="maintenance-pass-btn" type="button">Mở khoá</button>
+    </div>
+    <p class="maintenance-pass-error hidden" id="maintenance-pass-error">Sai mã, thử lại.</p>
   </div>
 </div>
 
@@ -1580,16 +1593,36 @@ applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'dar
 /* ---------- Khoá cứng web khi bảo trì / cập nhật đề (tắt sẵn) ----------
    Chỉ cần đổi MAINTENANCE_MODE = true và sửa MAINTENANCE_MESSAGE khi cần khoá web tạm thời (đang cập
    nhật/nhập lại hàng loạt câu hỏi, sợ dữ liệu chưa xong mà người dùng xem phải) rồi đẩy lên — không cần
-   sửa gì khác. KHOÁ HẲN: không có nút đóng, overlay phủ kín z-index cao nhất trang nên không cách nào
-   bấm xuyên qua để dùng app bên dưới được — chỉ đọc được đúng dòng thông báo. Bật xong nhớ tắt lại
-   (false) và đẩy lên lại thì web mở lại bình thường ngay (không cần chờ gì thêm). */
+   sửa gì khác. KHOÁ HẲN: overlay phủ kín z-index cao nhất trang nên không cách nào bấm xuyên qua để
+   dùng app bên dưới được — trừ khi nhập đúng mã bỏ qua (MAINTENANCE_BYPASS_PASS) để tự test trong lúc
+   vẫn khoá với người dùng khác. Bật xong nhớ tắt lại (false) và đẩy lên lại thì web mở lại bình thường
+   ngay cho tất cả mọi người (không cần chờ gì thêm). */
 const MAINTENANCE_MODE = true;
 const MAINTENANCE_MESSAGE = 'Mình đang bổ sung/chỉnh sửa đề thi. Vui lòng quay lại sau ít phút — dữ liệu bạn đã làm trước đó vẫn được lưu an toàn, không bị mất.';
+const MAINTENANCE_BYPASS_PASS = '13012005';
 
 if(MAINTENANCE_MODE){
   document.getElementById('maintenance-message').textContent = MAINTENANCE_MESSAGE;
   document.getElementById('maintenance-modal').classList.remove('hidden');
 }
+
+function tryMaintenanceBypass(){
+  const input = document.getElementById('maintenance-pass-input');
+  const errorEl = document.getElementById('maintenance-pass-error');
+  if(input.value === MAINTENANCE_BYPASS_PASS){
+    document.getElementById('maintenance-modal').classList.add('hidden');
+    document.getElementById('welcome-modal').classList.remove('hidden'); // vào lại luồng bình thường để test
+    errorEl.classList.add('hidden');
+  } else {
+    errorEl.classList.remove('hidden');
+    input.value = '';
+    input.focus();
+  }
+}
+document.getElementById('maintenance-pass-btn').addEventListener('click', tryMaintenanceBypass);
+document.getElementById('maintenance-pass-input').addEventListener('keydown', (e) => {
+  if(e.key === 'Enter') tryMaintenanceBypass();
+});
 
 /* ---------- Popup chào mừng -> nối tiếp popup ủng hộ tác giả ---------- */
 // Khi đang khoá bảo trì thì bỏ qua hẳn popup chào mừng/ủng hộ — web bị khoá, không có gì để "bắt đầu".
