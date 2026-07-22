@@ -610,6 +610,11 @@
   .modal-overlay.center-modal{
     align-items:center; padding: 20px;
   }
+  /* Khoá cứng toàn bộ web khi bảo trì — z-index cao nhất trang, nền đậm hơn, không có nút đóng nên
+     không cách nào bấm xuyên qua để dùng app bên dưới được. */
+  .modal-overlay.maintenance-lock{
+    z-index:1000; background: rgba(10,10,16,0.92);
+  }
   .modal-sheet{
     width:100%; max-width:560px;
     background: var(--bg-elev);
@@ -757,12 +762,11 @@
   </div>
 </div>
 
-<div id="maintenance-modal" class="modal-overlay center-modal hidden">
+<div id="maintenance-modal" class="modal-overlay center-modal maintenance-lock hidden">
   <div class="modal-sheet welcome-modal-sheet">
     <div class="welcome-emoji">🛠️</div>
     <div class="welcome-title">Website đang cập nhật đề thi</div>
     <div class="welcome-subtitle" id="maintenance-message"></div>
-    <button class="btn btn-primary" id="maintenance-modal-close" style="width:100%; margin-top:20px;">Đã hiểu, tiếp tục</button>
   </div>
 </div>
 
@@ -1533,34 +1537,29 @@ document.getElementById('theme-toggle').addEventListener('click', () => {
 });
 applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light'); // đồng bộ icon với theme đã áp lúc đầu trang
 
-/* ---------- Popup báo bảo trì / cập nhật đề (tắt sẵn) ----------
-   Chỉ cần đổi MAINTENANCE_MODE = true và sửa MAINTENANCE_MESSAGE khi đang cập nhật dữ liệu câu hỏi
-   (ví dụ thêm/sửa hàng loạt câu) rồi đẩy lên — không cần sửa gì khác. Chỉ mang tính THÔNG BÁO, không
-   khoá thao tác gì cả, vì app chạy hoàn toàn phía trình duyệt (không có "downtime" máy chủ thật) — mục
-   đích là để người dùng hiểu vì sao vài câu/số liệu có thể vừa thay đổi, tránh tưởng nhầm là lỗi. Bật
-   xong nhớ tắt lại (false) sau khi cập nhật xong. */
+/* ---------- Khoá cứng web khi bảo trì / cập nhật đề (tắt sẵn) ----------
+   Chỉ cần đổi MAINTENANCE_MODE = true và sửa MAINTENANCE_MESSAGE khi cần khoá web tạm thời (đang cập
+   nhật/nhập lại hàng loạt câu hỏi, sợ dữ liệu chưa xong mà người dùng xem phải) rồi đẩy lên — không cần
+   sửa gì khác. KHOÁ HẲN: không có nút đóng, overlay phủ kín z-index cao nhất trang nên không cách nào
+   bấm xuyên qua để dùng app bên dưới được — chỉ đọc được đúng dòng thông báo. Bật xong nhớ tắt lại
+   (false) và đẩy lên lại thì web mở lại bình thường ngay (không cần chờ gì thêm). */
 const MAINTENANCE_MODE = true;
-const MAINTENANCE_MESSAGE = 'Mình đang bổ sung/chỉnh sửa đề thi. Một vài câu hỏi có thể vừa được cập nhật — cứ tiếp tục học bình thường, dữ liệu bạn đã làm vẫn được lưu an toàn. Sẽ xong sớm thôi!';
+const MAINTENANCE_MESSAGE = 'Mình đang bổ sung/chỉnh sửa đề thi. Vui lòng quay lại sau ít phút — dữ liệu bạn đã làm trước đó vẫn được lưu an toàn, không bị mất.';
+
+if(MAINTENANCE_MODE){
+  document.getElementById('maintenance-message').textContent = MAINTENANCE_MESSAGE;
+  document.getElementById('maintenance-modal').classList.remove('hidden');
+}
 
 /* ---------- Popup chào mừng -> nối tiếp popup ủng hộ tác giả ---------- */
-function showWelcomeModal(){
+// Khi đang khoá bảo trì thì bỏ qua hẳn popup chào mừng/ủng hộ — web bị khoá, không có gì để "bắt đầu".
+if(!MAINTENANCE_MODE){
   document.getElementById('welcome-modal').classList.remove('hidden');
 }
 document.getElementById('welcome-modal-close').addEventListener('click', () => {
   document.getElementById('welcome-modal').classList.add('hidden');
   openDonateModal(); // hiện popup ủng hộ ngay sau khi đóng popup chào mừng, không cần chờ vào trang chủ
 });
-
-if(MAINTENANCE_MODE){
-  document.getElementById('maintenance-message').textContent = MAINTENANCE_MESSAGE;
-  document.getElementById('maintenance-modal').classList.remove('hidden');
-  document.getElementById('maintenance-modal-close').addEventListener('click', () => {
-    document.getElementById('maintenance-modal').classList.add('hidden');
-    showWelcomeModal(); // đóng thông báo bảo trì xong mới tới popup chào mừng như bình thường
-  });
-} else {
-  showWelcomeModal();
-}
 
 /* ---------- Popup ủng hộ tác giả ---------- */
 const DONATE_MODAL_LOCK_MS = 3000;
