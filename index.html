@@ -825,6 +825,34 @@
   }
   .nav-modal-actions{ display:flex; gap:10px; margin-top:16px; }
 
+  /* ---------- OCR screen ---------- */
+  .ocr-wrap{ padding: 16px 18px calc(24px + env(safe-area-inset-bottom)); }
+  .ocr-desc{ font-size:13px; color: var(--text-dim); line-height:1.5; margin: 0 0 16px; }
+  .ocr-drop{
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+    border: 1.5px dashed var(--border); border-radius: var(--radius);
+    padding: 28px 16px; cursor:pointer; text-align:center;
+    background: var(--bg-elev);
+  }
+  .ocr-drop-icon{ font-size:30px; }
+  .ocr-drop-text{ font-size:13.5px; font-weight:600; color: var(--text-dim); }
+  .ocr-lang-row{
+    display:flex; gap:16px; flex-wrap:wrap; margin: 16px 2px;
+    font-size:13px; color: var(--text-dim);
+  }
+  .ocr-lang-row label{ display:inline-flex; align-items:center; gap:6px; cursor:pointer; }
+  .ocr-progress{ margin-top:16px; }
+  .ocr-progress-label{ font-size:12.5px; color: var(--text-dim); margin-bottom:8px; }
+  .ocr-result{ margin-top:20px; }
+  .ocr-result-actions{ display:flex; gap:10px; margin-bottom:10px; }
+  .ocr-result-actions .btn{ flex:1; font-size:13px; padding:9px 12px; }
+  .ocr-textarea{
+    width:100%; min-height:260px; resize:vertical;
+    background: var(--bg-elev); border:1px solid var(--border); border-radius: var(--radius-sm);
+    padding:12px 14px; font-size:13px; line-height:1.5; color: var(--text);
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+
   @media (max-width: 360px){
     .home-hero h1{ font-size:22px; }
     .qcard .qtext{ font-size:16px; }
@@ -926,6 +954,7 @@
       <div class="footer-links">
         <a class="feedback-link" href="https://zalo.me/0382353110" target="_blank" rel="noopener noreferrer">💬 Báo lỗi / góp ý qua Zalo</a>
         <button class="feedback-link" id="donate-link-1" type="button">☕ Ủng hộ tác giả</button>
+        <button class="feedback-link" id="ocr-link-1" type="button">🔎 OCR ảnh/PDF</button>
       </div>
     </div>
   </div>
@@ -1014,6 +1043,7 @@
       <div class="footer-links">
         <a class="feedback-link" href="https://zalo.me/0382353110" target="_blank" rel="noopener noreferrer">💬 Báo lỗi / góp ý qua Zalo</a>
         <button class="feedback-link" id="donate-link-2" type="button">☕ Ủng hộ tác giả</button>
+        <button class="feedback-link" id="ocr-link-2" type="button">🔎 OCR ảnh/PDF</button>
       </div>
     </div>
   </div>
@@ -1027,6 +1057,41 @@
       <div class="title" id="answerkey-title">Đáp án &amp; giải thích</div>
     </div>
     <div class="review-list" id="answerkey-list"></div>
+  </div>
+
+  <!-- ============ OCR SCREEN ============ -->
+  <div id="screen-ocr" class="hidden">
+    <div class="topbar">
+      <div class="back-btn" id="ocr-back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </div>
+      <div class="title">OCR ảnh / PDF</div>
+    </div>
+    <div class="ocr-wrap">
+      <p class="ocr-desc">Trích chữ từ ảnh chụp hoặc PDF dạng ảnh scan — chạy thẳng trong trình duyệt, không gửi file lên server nào. OCR thuần (không AI), không cần chính xác tuyệt đối, hợp làm nhanh số lượng lớn file.</p>
+      <label class="ocr-drop" id="ocr-drop">
+        <input type="file" id="ocr-file-input" accept="application/pdf,image/*" multiple hidden>
+        <span class="ocr-drop-icon">📄</span>
+        <span class="ocr-drop-text" id="ocr-drop-text">Chạm để chọn ảnh / PDF (chọn được nhiều file)</span>
+      </label>
+      <div class="ocr-lang-row">
+        <label><input type="radio" name="ocr-lang" value="vie+eng" checked> Việt + Anh</label>
+        <label><input type="radio" name="ocr-lang" value="vie"> Chỉ Việt</label>
+        <label><input type="radio" name="ocr-lang" value="eng"> Chỉ Anh</label>
+      </div>
+      <button class="btn btn-primary" id="ocr-start-btn" style="width:100%;" disabled>Bắt đầu OCR</button>
+      <div class="ocr-progress hidden" id="ocr-progress">
+        <div class="ocr-progress-label" id="ocr-progress-label">Đang tải engine OCR...</div>
+        <div class="bar-track"><div class="bar-fill" id="ocr-progress-fill" style="width:0%"></div></div>
+      </div>
+      <div class="ocr-result hidden" id="ocr-result-wrap">
+        <div class="ocr-result-actions">
+          <button class="btn btn-ghost" id="ocr-copy-btn" type="button">📋 Sao chép</button>
+          <button class="btn btn-ghost" id="ocr-download-btn" type="button">⬇️ Tải .txt</button>
+        </div>
+        <textarea class="ocr-textarea" id="ocr-result" readonly placeholder="Kết quả OCR sẽ hiện ở đây..."></textarea>
+      </div>
+    </div>
   </div>
 
   <!-- ============ STATS SCREEN ============ -->
@@ -1600,6 +1665,7 @@ const screens = {
   quiz: document.getElementById('screen-quiz'),
   result: document.getElementById('screen-result'),
   answerkey: document.getElementById('screen-answerkey'),
+  ocr: document.getElementById('screen-ocr'),
 };
 function requestFullscreenSafe(){
   const el = document.documentElement;
@@ -1750,6 +1816,147 @@ document.getElementById('donate-modal-close').addEventListener('click', closeDon
 document.getElementById('donate-modal').addEventListener('click', (e) => {
   if(e.target.id === 'donate-modal') closeDonateModal();
 });
+
+/* =========================================================
+   OCR ẢNH / PDF (tool phụ, không liên quan trắc nghiệm)
+   Chạy thẳng trong trình duyệt bằng Tesseract.js (OCR thuần, không AI/LLM) +
+   PDF.js (render PDF thành ảnh). Cả 2 thư viện chỉ tải từ CDN khi người dùng
+   thật sự mở màn hình này, không ảnh hưởng tốc độ tải trang chính.
+   ========================================================= */
+const OCR_TESSERACT_SRC = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+const OCR_PDFJS_SRC = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js';
+const OCR_PDFJS_WORKER_SRC = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+
+let ocrEngineReady = false;
+let ocrFiles = [];
+let ocrRunning = false;
+
+function loadScriptOnce(src){
+  return new Promise((resolve, reject) => {
+    if(document.querySelector(`script[src="${src}"]`)){ resolve(); return; }
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error('Không tải được thư viện OCR — kiểm tra lại mạng.'));
+    document.head.appendChild(s);
+  });
+}
+
+async function ensureOcrEngine(){
+  if(ocrEngineReady) return;
+  await loadScriptOnce(OCR_TESSERACT_SRC);
+  await loadScriptOnce(OCR_PDFJS_SRC);
+  pdfjsLib.GlobalWorkerOptions.workerSrc = OCR_PDFJS_WORKER_SRC;
+  ocrEngineReady = true;
+}
+
+async function renderPdfPageToCanvas(page){
+  const viewport = page.getViewport({ scale: 2 }); // ~144dpi, đủ đọc chữ, không quá chậm
+  const canvas = document.createElement('canvas');
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+  return canvas;
+}
+
+document.getElementById('ocr-file-input').addEventListener('change', (e) => {
+  ocrFiles = Array.from(e.target.files || []);
+  document.getElementById('ocr-start-btn').disabled = ocrFiles.length === 0;
+  document.getElementById('ocr-drop-text').textContent = ocrFiles.length
+    ? `Đã chọn ${ocrFiles.length} file — chạm để chọn lại`
+    : 'Chạm để chọn ảnh / PDF (chọn được nhiều file)';
+});
+
+document.getElementById('ocr-start-btn').addEventListener('click', async () => {
+  if(!ocrFiles.length || ocrRunning) return;
+  ocrRunning = true;
+  const startBtn = document.getElementById('ocr-start-btn');
+  const progressWrap = document.getElementById('ocr-progress');
+  const progressLabel = document.getElementById('ocr-progress-label');
+  const progressFill = document.getElementById('ocr-progress-fill');
+  const resultWrap = document.getElementById('ocr-result-wrap');
+  const resultArea = document.getElementById('ocr-result');
+  const lang = document.querySelector('input[name="ocr-lang"]:checked').value;
+
+  startBtn.disabled = true;
+  progressWrap.classList.remove('hidden');
+  resultWrap.classList.add('hidden');
+  resultArea.value = '';
+  progressFill.style.width = '2%';
+  progressLabel.textContent = 'Đang tải engine OCR (lần đầu hơi lâu)...';
+
+  let worker = null;
+  try{
+    await ensureOcrEngine();
+    worker = await Tesseract.createWorker(lang, 1, {
+      logger: (m) => {
+        if(m.status === 'recognizing text'){
+          progressFill.style.width = Math.round(m.progress * 100) + '%';
+        }
+      }
+    });
+
+    let combined = '';
+    for(let fi = 0; fi < ocrFiles.length; fi++){
+      const file = ocrFiles[fi];
+      combined += `===== ${file.name} =====\n`;
+      const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+      if(isPdf){
+        const buf = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+        for(let p = 1; p <= pdf.numPages; p++){
+          progressLabel.textContent = `File ${fi + 1}/${ocrFiles.length}: ${file.name} — trang ${p}/${pdf.numPages}`;
+          const page = await pdf.getPage(p);
+          const canvas = await renderPdfPageToCanvas(page);
+          const { data: { text } } = await worker.recognize(canvas);
+          combined += `--- Trang ${p}/${pdf.numPages} ---\n${text}\n`;
+        }
+      } else {
+        progressLabel.textContent = `File ${fi + 1}/${ocrFiles.length}: ${file.name}`;
+        const { data: { text } } = await worker.recognize(file);
+        combined += text + '\n';
+      }
+      combined += '\n';
+      resultArea.value = combined;
+    }
+    progressLabel.textContent = `Xong! Đã OCR ${ocrFiles.length} file.`;
+    progressFill.style.width = '100%';
+    resultWrap.classList.remove('hidden');
+  } catch(err){
+    progressLabel.textContent = 'Lỗi: ' + err.message;
+  } finally {
+    if(worker) await worker.terminate();
+    startBtn.disabled = false;
+    ocrRunning = false;
+  }
+});
+
+document.getElementById('ocr-copy-btn').addEventListener('click', async () => {
+  const ta = document.getElementById('ocr-result');
+  try{
+    await navigator.clipboard.writeText(ta.value);
+  } catch(e){
+    ta.select();
+    document.execCommand('copy');
+  }
+});
+
+document.getElementById('ocr-download-btn').addEventListener('click', () => {
+  const text = document.getElementById('ocr-result').value;
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'ocr-ket-qua.txt';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+['ocr-link-1', 'ocr-link-2'].forEach(id => {
+  const btn = document.getElementById(id);
+  if(btn) btn.addEventListener('click', () => showScreen('ocr'));
+});
+document.getElementById('ocr-back').addEventListener('click', () => showScreen('hplist'));
 
 /* ---------- Chạm vào QR để phóng to ---------- */
 document.getElementById('donate-qr-img').addEventListener('click', () => {
