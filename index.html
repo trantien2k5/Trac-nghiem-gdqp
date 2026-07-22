@@ -761,6 +761,7 @@
     font-size:14px; color: var(--text-dim); margin-top:8px; line-height:1.5;
   }
   .answer-modal-correct .lbl{ color: var(--text-faint); font-weight:600; }
+  .answer-modal-wrong-pick .lbl{ color: var(--red); }
   .answer-modal-sheet .explain-box{ text-align:left; margin-top:16px; }
 
   /* ---------- Navigator modal ---------- */
@@ -1172,6 +1173,7 @@
     <div class="modal-sheet answer-modal-sheet">
       <div class="answer-modal-icon" id="answer-modal-icon"></div>
       <div class="answer-modal-title" id="answer-modal-title">Chính xác!</div>
+      <div class="answer-modal-correct answer-modal-wrong-pick hidden" id="answer-modal-wrong-pick"></div>
       <div class="answer-modal-correct hidden" id="answer-modal-correct"></div>
       <div class="explain-box hidden" id="answer-modal-explain"><span class="explain-icon">💡</span><span><span class="explain-label" id="answer-modal-explain-label">Mẹo:</span><span id="answer-modal-explain-text"></span></span></div>
       <button class="btn btn-primary" id="answer-modal-next" style="width:100%; margin-top:16px;">
@@ -2394,7 +2396,7 @@ function selectAnswer(optText){
   renderQuestion();
   if(currentMode === 'practice'){
     isCorrect ? playCorrectSound() : playWrongSound();
-    showAnswerPopup(isCorrect, item);
+    showAnswerPopup(isCorrect, item, optText);
   }
 }
 
@@ -2403,7 +2405,7 @@ let popupUnlockTimer = null;
 let popupCountdownInterval = null;
 const WRONG_POPUP_LOCK_MS = 2000;
 
-function showAnswerPopup(isCorrect, item){
+function showAnswerPopup(isCorrect, item, pickedText){
   const icon = document.getElementById('answer-modal-icon');
   icon.className = 'answer-modal-icon ' + (isCorrect ? 'ok' : 'bad');
   icon.innerHTML = isCorrect ? checkIcon() : xIcon();
@@ -2412,11 +2414,15 @@ function showAnswerPopup(isCorrect, item){
   title.textContent = isCorrect ? 'Chính xác!' : 'Chưa đúng';
   title.className = 'answer-modal-title ' + (isCorrect ? 'ok-text' : 'bad-text');
 
+  const wrongPickLine = document.getElementById('answer-modal-wrong-pick');
   const correctLine = document.getElementById('answer-modal-correct');
   if(!isCorrect){
+    wrongPickLine.innerHTML = `<span class="lbl">Bạn đã chọn:</span> ${escapeHtml(pickedText)}`;
+    wrongPickLine.classList.remove('hidden');
     correctLine.innerHTML = `<span class="lbl">Đáp án đúng:</span> ${escapeHtml(item.answer)}`;
     correctLine.classList.remove('hidden');
   } else {
+    wrongPickLine.classList.add('hidden');
     correctLine.classList.add('hidden');
   }
 
