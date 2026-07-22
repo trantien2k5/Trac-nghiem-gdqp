@@ -757,11 +757,22 @@
   .answer-modal-title{ font-size:19px; font-weight:800; letter-spacing:-0.01em; }
   .answer-modal-title.ok-text{ color: var(--green); }
   .answer-modal-title.bad-text{ color: var(--red); }
-  .answer-modal-correct{
-    font-size:14px; color: var(--text-dim); margin-top:8px; line-height:1.5;
+  .answer-pick-blocks{ display:flex; flex-direction:column; gap:8px; margin-top:14px; text-align:left; }
+  .answer-pick-block{
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    display:flex; flex-direction:column; gap:2px;
   }
-  .answer-modal-correct .lbl{ color: var(--text-faint); font-weight:600; }
-  .answer-modal-wrong-pick .lbl{ color: var(--red); }
+  .answer-pick-block .lbl{
+    font-size:11px; font-weight:800; letter-spacing:0.04em; text-transform:uppercase;
+  }
+  .answer-pick-block .val{ font-size:14.5px; font-weight:600; line-height:1.4; }
+  .answer-pick-block.wrong-block{ background: var(--red-bg); }
+  .answer-pick-block.wrong-block .lbl{ color: var(--red); }
+  .answer-pick-block.wrong-block .val{ color: var(--red); }
+  .answer-pick-block.correct-block{ background: var(--green-bg); }
+  .answer-pick-block.correct-block .lbl{ color: var(--green); }
+  .answer-pick-block.correct-block .val{ color: var(--green); }
   .answer-modal-sheet .explain-box{ text-align:left; margin-top:16px; }
 
   /* ---------- Navigator modal ---------- */
@@ -1173,8 +1184,10 @@
     <div class="modal-sheet answer-modal-sheet">
       <div class="answer-modal-icon" id="answer-modal-icon"></div>
       <div class="answer-modal-title" id="answer-modal-title">Chính xác!</div>
-      <div class="answer-modal-correct answer-modal-wrong-pick hidden" id="answer-modal-wrong-pick"></div>
-      <div class="answer-modal-correct hidden" id="answer-modal-correct"></div>
+      <div class="answer-pick-blocks">
+        <div class="answer-pick-block wrong-block hidden" id="answer-modal-wrong-pick"><span class="lbl">Bạn đã chọn</span><span class="val" id="answer-modal-wrong-pick-val"></span></div>
+        <div class="answer-pick-block correct-block hidden" id="answer-modal-correct"><span class="lbl">Đáp án đúng</span><span class="val" id="answer-modal-correct-val"></span></div>
+      </div>
       <div class="explain-box hidden" id="answer-modal-explain"><span class="explain-icon">💡</span><span><span class="explain-label" id="answer-modal-explain-label">Giải thích:</span><span id="answer-modal-explain-text"></span></span></div>
       <button class="btn btn-primary" id="answer-modal-next" style="width:100%; margin-top:16px;">
         <span id="answer-modal-next-label">Tiếp tục</span>
@@ -2417,9 +2430,9 @@ function showAnswerPopup(isCorrect, item, pickedText){
   const wrongPickLine = document.getElementById('answer-modal-wrong-pick');
   const correctLine = document.getElementById('answer-modal-correct');
   if(!isCorrect){
-    wrongPickLine.innerHTML = `<span class="lbl">Bạn đã chọn:</span> ${escapeHtml(pickedText)}`;
+    document.getElementById('answer-modal-wrong-pick-val').textContent = pickedText;
     wrongPickLine.classList.remove('hidden');
-    correctLine.innerHTML = `<span class="lbl">Đáp án đúng:</span> ${escapeHtml(item.answer)}`;
+    document.getElementById('answer-modal-correct-val').textContent = item.answer;
     correctLine.classList.remove('hidden');
   } else {
     wrongPickLine.classList.add('hidden');
