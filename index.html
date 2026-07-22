@@ -1943,7 +1943,9 @@ document.getElementById('ocr-copy-btn').addEventListener('click', async () => {
 
 document.getElementById('ocr-download-btn').addEventListener('click', () => {
   const text = document.getElementById('ocr-result').value;
-  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  // Thêm BOM UTF-8 (U+FEFF) — nhiều app xem file .txt trên điện thoại (nhất là Android) không tự
+  // nhận diện UTF-8 nếu thiếu BOM, dẫn đến hiển thị sai dấu tiếng Việt dù file vẫn đúng encoding.
+  const blob = new Blob(['﻿' + text], { type: 'text/plain;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
