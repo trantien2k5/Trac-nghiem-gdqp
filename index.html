@@ -765,13 +765,17 @@
   .welcome-title{ font-size:21px; font-weight:800; letter-spacing:-0.01em; line-height:1.45; }
   .welcome-subtitle{ font-size:13.5px; color: var(--text-dim); line-height:1.5; margin-top:10px; }
 
-  /* ---------- Popup ủng hộ tác giả (QR chuyển khoản) ---------- */
-  .donate-modal-sheet{ text-align:center; border-radius:22px; max-width:360px; padding: 30px 24px calc(24px + env(safe-area-inset-bottom)); }
+  /* ---------- Ủng hộ tác giả (QR chuyển khoản) — hiện trực tiếp trên trang chủ, không phải popup ---------- */
+  .donate-inline-card{
+    margin: 16px 16px 0;
+    background: var(--bg-elev); border:1px solid var(--border); border-radius: var(--radius);
+    padding: 22px 20px; text-align:center; box-shadow: var(--shadow-card);
+  }
+  .donate-inline-card .welcome-title{ font-size:17px; }
   .donate-emoji{ font-size:44px; line-height:1; margin-bottom:10px; }
   .donate-qr-img{ width:100%; max-width:260px; border-radius:16px; margin-top:16px; box-shadow: var(--shadow-card); cursor:zoom-in; }
   .donate-actions{ display:flex; gap:10px; margin-top:14px; }
   .donate-actions .btn{ flex:1; font-size:12px; padding:11px 8px; text-decoration:none; gap:5px; }
-  #donate-modal-close.disabled{ opacity:0.6; cursor:not-allowed; }
 
   /* ---------- Xem QR phóng to ---------- */
   .qr-lightbox{
@@ -912,21 +916,6 @@
   </div>
 </div>
 
-<div id="donate-modal" class="modal-overlay center-modal hidden">
-  <div class="modal-sheet donate-modal-sheet">
-    <div class="donate-emoji">☕</div>
-    <div class="welcome-title">Ủng hộ tác giả</div>
-    <div class="welcome-subtitle">App miễn phí, không quảng cáo. Nếu thấy hữu ích, một ly cà phê ủng hộ sẽ là động lực để duy trì và cập nhật thêm câu hỏi mới.</div>
-    <img class="donate-qr-img" id="donate-qr-img" src="assets/donate-qr.jpg" alt="Mã QR chuyển khoản ủng hộ tác giả — chạm để phóng to">
-    <div class="donate-actions">
-      <a class="btn btn-ghost" href="assets/donate-qr.jpg" download="ung-ho-tran-tien-qr.jpg">⬇️ Tải mã QR</a>
-      <a class="btn btn-ghost" href="https://dl.vietqr.io/pay?app=bidv&ba=7102520837@bidv&tn=Ung%20ho%20app%20GDQP&bn=TRAN%20TIEN" target="_blank" rel="noopener noreferrer">⚡ Chuyển khoản nhanh</a>
-    </div>
-    <button class="btn btn-primary" id="donate-modal-close" style="width:100%; margin-top:10px;">
-      <span id="donate-modal-close-label">Đóng</span>
-    </button>
-  </div>
-</div>
 
 <div id="qr-lightbox" class="qr-lightbox hidden">
   <img id="qr-lightbox-img" src="assets/donate-qr.jpg" alt="Mã QR phóng to">
@@ -982,11 +971,22 @@
       <p>Chọn học phần để bắt đầu ôn tập.</p>
     </div>
     <div class="hp-list" id="hp-list"></div>
+
+    <div class="donate-inline-card">
+      <div class="donate-emoji">☕</div>
+      <div class="welcome-title">Ủng hộ tác giả</div>
+      <div class="welcome-subtitle">App miễn phí, không quảng cáo. Nếu thấy hữu ích, một ly cà phê ủng hộ sẽ là động lực để duy trì và cập nhật thêm câu hỏi mới.</div>
+      <img class="donate-qr-img" id="donate-qr-img" src="assets/donate-qr.jpg" alt="Mã QR chuyển khoản ủng hộ tác giả — chạm để phóng to">
+      <div class="donate-actions">
+        <a class="btn btn-ghost" href="assets/donate-qr.jpg" download="ung-ho-tran-tien-qr.jpg">⬇️ Tải mã QR</a>
+        <a class="btn btn-ghost" href="https://dl.vietqr.io/pay?app=bidv&ba=7102520837@bidv&tn=Ung%20ho%20app%20GDQP&bn=TRAN%20TIEN" target="_blank" rel="noopener noreferrer">⚡ Chuyển khoản nhanh</a>
+      </div>
+    </div>
+
     <div class="app-footer">
       <div class="footer-copyright">Ôn Tập Trắc Nghiệm GDQP<span class="dot"></span>© 2026 Trần Tiến<span class="dot"></span><span id="app-version-1"></span></div>
       <div class="footer-links">
         <a class="feedback-link" href="https://zalo.me/0382353110" target="_blank" rel="noopener noreferrer">💬 Báo lỗi / góp ý qua Zalo</a>
-        <button class="feedback-link" id="donate-link-1" type="button">☕ Ủng hộ tác giả</button>
         <button class="feedback-link" id="ocr-link-1" type="button">🔎 OCR ảnh/PDF</button>
         <button class="feedback-link" id="settings-link-1" type="button">⚙️ Cài đặt học tập</button>
         <button class="feedback-link hidden" id="admin-logout-link-1" type="button">🔓 Đăng xuất admin</button>
@@ -1077,7 +1077,6 @@
       <div class="footer-note">Dữ liệu lưu trên máy bạn (localStorage)</div>
       <div class="footer-links">
         <a class="feedback-link" href="https://zalo.me/0382353110" target="_blank" rel="noopener noreferrer">💬 Báo lỗi / góp ý qua Zalo</a>
-        <button class="feedback-link" id="donate-link-2" type="button">☕ Ủng hộ tác giả</button>
         <button class="feedback-link" id="ocr-link-2" type="button">🔎 OCR ảnh/PDF</button>
         <button class="feedback-link" id="settings-link-2" type="button">⚙️ Cài đặt học tập</button>
         <button class="feedback-link hidden" id="admin-logout-link-2" type="button">🔓 Đăng xuất admin</button>
@@ -1830,67 +1829,17 @@ function adminLogout(){
   btn.addEventListener('click', adminLogout);
 });
 
-/* ---------- Popup chào mừng -> nối tiếp popup ủng hộ tác giả ---------- */
-// Khi đang khoá bảo trì và chưa đăng nhập admin thì bỏ qua hẳn popup chào mừng/ủng hộ — web bị khoá,
-// không có gì để "bắt đầu". Admin đã đăng nhập (nhớ qua localStorage) thì vẫn vào luồng bình thường.
+/* ---------- Popup chào mừng ---------- */
+// Khi đang khoá bảo trì và chưa đăng nhập admin thì bỏ qua hẳn popup chào mừng — web bị khoá, không có
+// gì để "bắt đầu". Admin đã đăng nhập (nhớ qua localStorage) thì vẫn vào luồng bình thường.
 if(!MAINTENANCE_MODE || isAdminLoggedIn()){
   document.getElementById('welcome-modal').classList.remove('hidden');
 }
 document.getElementById('welcome-modal-close').addEventListener('click', () => {
   document.getElementById('welcome-modal').classList.add('hidden');
-  openDonateModal(); // hiện popup ủng hộ ngay sau khi đóng popup chào mừng, không cần chờ vào trang chủ
 });
 
-/* ---------- Popup ủng hộ tác giả ---------- */
-const DONATE_MODAL_LOCK_MS = 3000;
-let donateModalUnlockTimer = null;
-let donateModalCountdownInterval = null;
-let donateModalLocked = false;
-
-function openDonateModal(){
-  document.getElementById('donate-modal').classList.remove('hidden');
-  lockDonateModal();
-}
-function lockDonateModal(){
-  const closeBtn = document.getElementById('donate-modal-close');
-  const closeLabel = document.getElementById('donate-modal-close-label');
-  if(donateModalUnlockTimer){ clearTimeout(donateModalUnlockTimer); donateModalUnlockTimer = null; }
-  if(donateModalCountdownInterval){ clearInterval(donateModalCountdownInterval); donateModalCountdownInterval = null; }
-  donateModalLocked = true;
-  closeBtn.disabled = true;
-  closeBtn.classList.add('disabled');
-  let remainingSec = Math.ceil(DONATE_MODAL_LOCK_MS / 1000);
-  closeLabel.textContent = `Đóng (${remainingSec}s)`;
-  donateModalCountdownInterval = setInterval(() => {
-    remainingSec--;
-    if(remainingSec > 0){
-      closeLabel.textContent = `Đóng (${remainingSec}s)`;
-    } else {
-      clearInterval(donateModalCountdownInterval);
-      donateModalCountdownInterval = null;
-    }
-  }, 1000);
-  donateModalUnlockTimer = setTimeout(() => {
-    donateModalLocked = false;
-    closeBtn.disabled = false;
-    closeBtn.classList.remove('disabled');
-    closeLabel.textContent = 'Đóng';
-    if(donateModalCountdownInterval){ clearInterval(donateModalCountdownInterval); donateModalCountdownInterval = null; }
-    donateModalUnlockTimer = null;
-  }, DONATE_MODAL_LOCK_MS);
-}
-function closeDonateModal(){
-  if(donateModalLocked) return;
-  document.getElementById('donate-modal').classList.add('hidden');
-}
-['donate-link-1', 'donate-link-2'].forEach(id => {
-  const btn = document.getElementById(id);
-  if(btn) btn.addEventListener('click', openDonateModal);
-});
-document.getElementById('donate-modal-close').addEventListener('click', closeDonateModal);
-document.getElementById('donate-modal').addEventListener('click', (e) => {
-  if(e.target.id === 'donate-modal') closeDonateModal();
-});
+// Ủng hộ tác giả: tạm thời hiện trực tiếp ngay trên trang chủ (.donate-inline-card), không dùng popup nữa.
 
 /* =========================================================
    OCR ẢNH / PDF (tool phụ, không liên quan trắc nghiệm)
