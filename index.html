@@ -437,18 +437,8 @@
   .hp-card .hp-arrow{ flex-shrink:0; color: var(--text-faint); }
 
   /* ---------- Quiz screen ---------- */
-  .progress-wrap{
-    padding: 12px 18px 0;
-  }
-  .progress-track{
-    height:6px; background: var(--border); border-radius:6px; overflow:hidden;
-  }
-  .progress-fill{
-    height:100%; background: linear-gradient(90deg, var(--indigo-soft), var(--indigo));
-    border-radius:6px; transition: width .35s cubic-bezier(.4,0,.2,1);
-  }
   .dot-row{
-    display:flex; gap:4px; padding: 10px 18px 0; flex-wrap:wrap;
+    display:flex; gap:4px; padding: 14px 18px 0; flex-wrap:wrap;
   }
   .dot{
     width:8px; height:8px; border-radius:50%; background: var(--border); flex-shrink:0;
@@ -459,25 +449,13 @@
   .dot.dot-flagged{ box-shadow: 0 0 0 2px var(--amber); }
   .dot.current{ outline: 2px solid var(--indigo); outline-offset:2px; }
 
+  /* Bỏ khung/nền/viền bao quanh câu hỏi — chỉ còn chữ trần trên nền trang, tối giản hơn */
   .qcard{
     margin: 18px 16px 0;
-    background: var(--bg-elev);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 18px 18px;
-    box-shadow: var(--shadow-card);
+    display:flex; flex-direction:column;
   }
-  .qcard .qnum{
-    font-size:12px; font-weight:700; color: var(--indigo); letter-spacing:0.05em; margin-bottom:10px;
-  }
-  .mastery-pct{
-    font-size:12px; font-weight:600; color: var(--text-dim); margin-bottom:3px;
-  }
-  .qcard-head{
-    display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;
-  }
-  .qcard-head .qnum{ margin-bottom:0; }
   .flag-btn{
+    align-self:flex-end; margin-bottom:10px;
     display:flex; align-items:center; gap:5px;
     font-size:12px; font-weight:700; color: var(--text-faint);
     border: 1px solid var(--border); border-radius: 20px; padding: 5px 10px 5px 8px;
@@ -1149,19 +1127,12 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
       </div>
     </div>
-    <div class="progress-wrap">
-      <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
-    </div>
     <div class="dot-row" id="dot-row"></div>
 
     <div class="qcard">
-      <div class="mastery-pct hidden" id="mastery-pct"></div>
-      <div class="qcard-head">
-        <div class="qnum" id="q-num-label">CÂU 1</div>
-        <div class="flag-btn hidden" id="flag-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v18M5 4h11l-2.5 3.5L16 11H5"/></svg>
-          <span id="flag-btn-label">Đánh dấu</span>
-        </div>
+      <div class="flag-btn hidden" id="flag-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v18M5 4h11l-2.5 3.5L16 11H5"/></svg>
+        <span id="flag-btn-label">Đánh dấu</span>
       </div>
       <div class="qtext" id="q-text"></div>
     </div>
@@ -2224,7 +2195,6 @@ document.getElementById('mode-exam').addEventListener('click', () => {
 
 function setupQuizUiForMode(mode){
   const counterEl = document.getElementById('quiz-counter');
-  const masteryPctEl = document.getElementById('mastery-pct');
   const timerEl = document.getElementById('timer-badge');
   const gridBtn = document.getElementById('nav-grid-btn');
   const flagBtn = document.getElementById('flag-btn');
@@ -2234,16 +2204,13 @@ function setupQuizUiForMode(mode){
   stopTimer();
   if(mode === 'exam'){
     counterEl.classList.add('hidden');
-    masteryPctEl.classList.add('hidden');
     timerEl.classList.remove('hidden');
     gridBtn.style.display = 'flex';
     flagBtn.classList.remove('hidden');
     prevBtn.classList.remove('hidden');
     quizNav.classList.remove('hidden');
   } else {
-    // % đã thuộc hiện ngay trong thẻ câu hỏi (trên dòng CÂU X), không hiện ở thanh trên cùng nữa.
     counterEl.classList.add('hidden');
-    masteryPctEl.classList.remove('hidden');
     timerEl.classList.add('hidden');
     gridBtn.style.display = 'none';
     flagBtn.classList.add('hidden');
@@ -2554,23 +2521,11 @@ function renderQuestion(){
 
   if(isExam){
     document.getElementById('quiz-counter').textContent = `${currentIndex+1}/${currentQuestions.length}`;
-    document.getElementById('progress-fill').style.width = `${((currentIndex)/currentQuestions.length)*100}%`;
-  } else {
-    // % đã thuộc là của riêng câu đang xem (streak đúng liên tiếp đã cách quãng / ngưỡng đã thuộc),
-    // không phải tiến độ cả phiên. Dùng chung cho mọi chế độ vì giờ cùng đọc 1 nguồn dữ liệu.
-    const stat = adaptiveStatFor(migrateLegacyMasteryIfNeeded(currentHp), item._qid);
-    const qPct = Math.round(Math.min(stat.streak, ADAPTIVE_MASTERED_STREAK) / ADAPTIVE_MASTERED_STREAK * 100);
-    document.getElementById('mastery-pct').textContent = `${qPct}% đã thuộc`;
-    document.getElementById('progress-fill').style.width = `${Math.round((currentIndex/qOrder.length)*100)}%`;
   }
-  let qTag = '';
-  if(!isExam && slotIsRepeat[currentIndex]) qTag = ' · Ôn lại câu sai';
-  else if(adaptiveSessionActive) qTag = ' · ' + (ADAPTIVE_GROUP_LABEL[adaptiveGroupOfQ[qIdx]] || '');
-  else if(specialSessionActive && activeSpecialSet) qTag = ' · ' + activeSpecialSet.label;
-  else if(!isExam && slotIsPriority[currentIndex]) qTag = ' · Chưa thuộc, cần ôn thêm';
+  // Tối giản: chỉ còn "Câu N: <nội dung>" nối liền 1 dòng — bỏ % đã thuộc, bỏ nhãn trạng thái
+  // (chưa thuộc/ôn lại câu sai/...) khỏi phần hiển thị câu hỏi (vẫn dùng nội bộ cho sắp xếp câu/chấm tiến độ).
   const qNumDisplay = (adaptiveSessionActive && item._qid) ? item._qid : qIdx + 1;
-  document.getElementById('q-num-label').textContent = `CÂU ${qNumDisplay}` + qTag;
-  document.getElementById('q-text').textContent = item.q;
+  document.getElementById('q-text').textContent = `Câu ${qNumDisplay}: ${item.q}`;
 
   const container = document.getElementById('options-container');
   container.innerHTML = '';
@@ -2768,6 +2723,7 @@ function advanceQuestion(){
   if(currentIndex < qOrder.length - 1){
     currentIndex++;
     renderQuestion();
+    window.scrollTo(0, 0); // sang câu mới thì cuộn lại lên đầu, tránh giữ nguyên vị trí cuộn của câu trước
   } else if(currentMode === 'exam'){
     attemptSubmit();
   } else {
@@ -2779,6 +2735,7 @@ document.getElementById('btn-prev').addEventListener('click', () => {
   if(currentIndex > 0){
     currentIndex--;
     renderQuestion();
+    window.scrollTo(0, 0);
   }
 });
 
@@ -2800,6 +2757,7 @@ function openNavigator(){
       currentIndex = i;
       closeNavigator();
       renderQuestion();
+      window.scrollTo(0, 0);
     });
     grid.appendChild(cell);
   });
