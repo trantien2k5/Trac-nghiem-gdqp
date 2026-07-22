@@ -713,6 +713,26 @@
   .modal-sheet .modal-body{ font-size:14px; color: var(--text-dim); line-height:1.5; margin-bottom:18px; }
   .modal-sheet .modal-actions{ display:flex; gap:10px; }
 
+  /* ---------- Cài đặt học tập ---------- */
+  .settings-row{ margin: 16px 0; }
+  .settings-label{ font-size:14px; font-weight:700; }
+  .settings-desc{ font-size:12.5px; color: var(--text-dim); line-height:1.45; margin-top:3px; margin-bottom:10px; }
+  .settings-segmented{ display:flex; gap:6px; }
+  .settings-segmented .filter-chip{ flex:1; text-align:center; padding:9px 0; font-size:13px; }
+  .settings-toggle-row{ display:flex; align-items:center; justify-content:space-between; gap:14px; }
+  .switch{ position:relative; display:inline-block; width:44px; height:26px; flex-shrink:0; }
+  .switch input{ opacity:0; width:0; height:0; position:absolute; }
+  .switch-slider{
+    position:absolute; inset:0; cursor:pointer;
+    background: var(--bg-elev-2); border:1px solid var(--border); border-radius:26px; transition:.15s;
+  }
+  .switch-slider::before{
+    content:''; position:absolute; height:18px; width:18px; left:3px; top:2px;
+    background:#fff; border-radius:50%; transition:.15s; box-shadow:0 1px 3px rgba(0,0,0,0.25);
+  }
+  .switch input:checked + .switch-slider{ background: var(--indigo); border-color: var(--indigo); }
+  .switch input:checked + .switch-slider::before{ transform: translateX(18px); }
+
   .mode-option{
     display:flex; align-items:center; gap:12px;
     border: 1px solid var(--border); border-radius: var(--radius-sm);
@@ -912,6 +932,34 @@
   <img id="qr-lightbox-img" src="assets/donate-qr.jpg" alt="Mã QR phóng to">
 </div>
 
+<div id="settings-modal" class="modal-overlay hidden">
+  <div class="modal-sheet">
+    <div class="modal-title">⚙️ Cài đặt học tập</div>
+    <div class="settings-row">
+      <div class="settings-label">Số lần làm đúng để tính "đã thuộc"</div>
+      <div class="settings-desc">Mặc định 3 lần (cách quãng dần) mới chắc là nhớ thật. Giảm xuống để qua nhanh hơn, ít bị hỏi lại — nhưng dễ quên hơn về sau.</div>
+      <div class="settings-segmented" id="mastered-streak-segmented">
+        <button class="filter-chip" data-value="1" type="button">1 lần</button>
+        <button class="filter-chip" data-value="2" type="button">2 lần</button>
+        <button class="filter-chip" data-value="3" type="button">3 lần</button>
+      </div>
+    </div>
+    <div class="settings-row">
+      <div class="settings-toggle-row">
+        <div>
+          <div class="settings-label">Ưu tiên ôn câu sai</div>
+          <div class="settings-desc" style="margin-bottom:0;">Khi làm 1 đề Luyện tập, câu hay sai/chưa thuộc được đẩy lên đầu đề để ôn trước.</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="prioritize-wrong-toggle">
+          <span class="switch-slider"></span>
+        </label>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="settings-modal-close" style="width:100%; margin-top:4px;">Xong</button>
+  </div>
+</div>
+
 <div id="app">
 
   <div class="bottom-tabs" id="bottom-tabs">
@@ -940,6 +988,7 @@
         <a class="feedback-link" href="https://zalo.me/0382353110" target="_blank" rel="noopener noreferrer">💬 Báo lỗi / góp ý qua Zalo</a>
         <button class="feedback-link" id="donate-link-1" type="button">☕ Ủng hộ tác giả</button>
         <button class="feedback-link" id="ocr-link-1" type="button">🔎 OCR ảnh/PDF</button>
+        <button class="feedback-link" id="settings-link-1" type="button">⚙️ Cài đặt học tập</button>
         <button class="feedback-link hidden" id="admin-logout-link-1" type="button">🔓 Đăng xuất admin</button>
       </div>
     </div>
@@ -1030,6 +1079,7 @@
         <a class="feedback-link" href="https://zalo.me/0382353110" target="_blank" rel="noopener noreferrer">💬 Báo lỗi / góp ý qua Zalo</a>
         <button class="feedback-link" id="donate-link-2" type="button">☕ Ủng hộ tác giả</button>
         <button class="feedback-link" id="ocr-link-2" type="button">🔎 OCR ảnh/PDF</button>
+        <button class="feedback-link" id="settings-link-2" type="button">⚙️ Cài đặt học tập</button>
         <button class="feedback-link hidden" id="admin-logout-link-2" type="button">🔓 Đăng xuất admin</button>
       </div>
     </div>
@@ -1398,13 +1448,29 @@ function liveStreak(a){
    thực sự tiến thêm 1 bước streak, để đếm khoảng cách — tách riêng
    khỏi lastSeen vì một lần "chạm hụt" không được phép làm mới đồng hồ
    đếm khoảng cách).
-   "Đã thuộc" = đúng liên tiếp đủ ADAPTIVE_MASTERED_STREAK lần — nhưng
-   mỗi lần đúng chỉ được TÍNH vào chuỗi đó nếu cách lần đúng trước đủ xa
-   (xem ADAPTIVE_MIN_GAP_STEPS, tăng dần theo từng bước; đếm theo số câu
-   đã trả lời, không phải theo phiên học) — trả lời đúng liền tay lại
-   trong lúc vừa mới thấy câu đó thì không tính là đã ôn lại thật sự.
+   "Đã thuộc" = đúng liên tiếp đủ appSettings.masteredStreak lần (mặc định 3, người dùng tự chỉnh được
+   trong Cài đặt) — nhưng mỗi lần đúng chỉ được TÍNH vào chuỗi đó nếu cách lần đúng trước đủ xa (xem
+   ADAPTIVE_MIN_GAP_STEPS, tăng dần theo từng bước; đếm theo số câu đã trả lời, không phải theo phiên
+   học) — trả lời đúng liền tay lại trong lúc vừa mới thấy câu đó thì không tính là đã ôn lại thật sự.
    ========================================================= */
-const ADAPTIVE_MASTERED_STREAK = 3;   // số lần đúng liên tiếp (đã cách quãng) để coi là "đã thuộc"
+/* ---------- Cài đặt học tập (lưu riêng theo máy, không phải theo học phần) ----------
+   masteredStreak: xem giải thích ở trên — 1/2/3 lần, càng thấp thì càng nhanh được tính "đã thuộc"
+   nhưng càng dễ quên lại về sau (ít được xác nhận cách quãng đủ chắc).
+   prioritizeWrong: khi làm 1 đề Luyện tập cố định, có đẩy câu chưa thuộc/hay sai lên đầu đề hay không
+   (tắt thì giữ nguyên thứ tự gốc của đề). Không ảnh hưởng Luyện tập thông minh/Ôn câu sai — 2 chế độ đó
+   vốn đã ưu tiên câu sai/chưa thuộc theo đúng mục đích riêng, không cần tuỳ chỉnh thêm. */
+const SETTINGS_KEY = 'gdqp_settings_v1';
+const DEFAULT_SETTINGS = { masteredStreak: 3, prioritizeWrong: true };
+function loadSettings(){
+  try{
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    return raw ? Object.assign({}, DEFAULT_SETTINGS, JSON.parse(raw)) : Object.assign({}, DEFAULT_SETTINGS);
+  }catch(e){ return Object.assign({}, DEFAULT_SETTINGS); }
+}
+function saveSettings(){
+  try{ localStorage.setItem(SETTINGS_KEY, JSON.stringify(appSettings)); }catch(e){}
+}
+let appSettings = loadSettings();
 // Khoảng cách tối thiểu (số câu khác xen giữa) để 1 lần đúng được cộng dồn vào streak, tăng dần theo
 // từng bước: từ streak 0->1 không cần cách (vừa sai xong, sửa ngay); 1->2 cách >=5 câu; 2->3 (chốt "đã
 // thuộc") cách >=10 câu — càng gần mốc thuộc càng cần cách xa hơn để chắc là nhớ thật, không phải nhớ tạm.
@@ -1429,7 +1495,7 @@ function adaptiveStatFor(data, id){
 function adaptiveGroup(stat){
   const seen = stat.correctCount > 0 || stat.wrongCount > 0;
   if(!seen) return 'new';
-  if(stat.streak >= ADAPTIVE_MASTERED_STREAK) return 'mastered';
+  if(stat.streak >= appSettings.masteredStreak) return 'mastered';
   if(stat.streak === 0) return 'wrong';
   return 'shaky';
 }
@@ -1488,7 +1554,7 @@ function migrateLegacyMasteryIfNeeded(hp){
       const oldStreak = r.mastery[localIndex] || 0;
       const wasWrong = (r.wrongIndices || []).includes(localIndex);
       // oldStreak >= 3 ở hệ cũ vốn đã là "đã thuộc", giữ nguyên giá trị streak (không cần quy đổi thang
-      // điểm nào khác) vì ngưỡng "đã thuộc" mới cũng chính là streak >= ADAPTIVE_MASTERED_STREAK (3).
+      // điểm nào khác) vì ngưỡng "đã thuộc" mới cũng chính là streak >= appSettings.masteredStreak.
       data.q[q.id] = {
         correctCount: oldStreak,
         wrongCount: wasWrong ? 1 : 0,
@@ -1969,6 +2035,42 @@ document.getElementById('ocr-download-btn').addEventListener('click', () => {
 });
 document.getElementById('ocr-back').addEventListener('click', () => showScreen('hplist'));
 
+/* =========================================================
+   CÀI ĐẶT HỌC TẬP (masteredStreak / prioritizeWrong — xem appSettings)
+   ========================================================= */
+function refreshSettingsModalUi(){
+  document.querySelectorAll('#mastered-streak-segmented .filter-chip').forEach(btn => {
+    btn.classList.toggle('active', Number(btn.dataset.value) === appSettings.masteredStreak);
+  });
+  document.getElementById('prioritize-wrong-toggle').checked = appSettings.prioritizeWrong;
+}
+function openSettingsModal(){
+  refreshSettingsModalUi();
+  document.getElementById('settings-modal').classList.remove('hidden');
+}
+function closeSettingsModal(){
+  document.getElementById('settings-modal').classList.add('hidden');
+}
+['settings-link-1', 'settings-link-2'].forEach(id => {
+  const btn = document.getElementById(id);
+  if(btn) btn.addEventListener('click', openSettingsModal);
+});
+document.getElementById('settings-modal-close').addEventListener('click', closeSettingsModal);
+document.getElementById('settings-modal').addEventListener('click', (e) => {
+  if(e.target.id === 'settings-modal') closeSettingsModal();
+});
+document.querySelectorAll('#mastered-streak-segmented .filter-chip').forEach(btn => {
+  btn.addEventListener('click', () => {
+    appSettings.masteredStreak = Number(btn.dataset.value);
+    saveSettings();
+    refreshSettingsModalUi();
+  });
+});
+document.getElementById('prioritize-wrong-toggle').addEventListener('change', (e) => {
+  appSettings.prioritizeWrong = e.target.checked;
+  saveSettings();
+});
+
 /* ---------- Chạm vào QR để phóng to ---------- */
 document.getElementById('donate-qr-img').addEventListener('click', () => {
   document.getElementById('qr-lightbox').classList.remove('hidden');
@@ -2214,14 +2316,15 @@ function startQuiz(setIndex, mode){
   qOrder = currentQuestions.map((_, i) => i);
   sessionQueueCap = Math.ceil(qOrder.length * SESSION_GROWTH_MULT);
   slotIsPriority = new Array(qOrder.length).fill(false);
-  if(currentMode === 'practice'){
+  if(currentMode === 'practice' && appSettings.prioritizeWrong){
     // Câu chưa thuộc/hay sai lên đầu, đã thuộc ra cuối — dựa trên kho độ thuộc dùng chung
     // (đồng nhất với Luyện tập thông minh/Ôn câu sai/Thống kê, không riêng gì đề này nữa).
+    // Tắt được trong Cài đặt (appSettings.prioritizeWrong) — tắt thì giữ nguyên thứ tự gốc của đề.
     const masteryData = migrateLegacyMasteryIfNeeded(currentHp);
     const groupOf = (i) => adaptiveGroup(adaptiveStatFor(masteryData, currentQuestions[i]._qid));
     const sortKey = (i) => {
       const stat = adaptiveStatFor(masteryData, currentQuestions[i]._qid);
-      return ADAPTIVE_GROUP_SORT_RANK[adaptiveGroup(stat)] * 10 + Math.min(stat.streak, ADAPTIVE_MASTERED_STREAK);
+      return ADAPTIVE_GROUP_SORT_RANK[adaptiveGroup(stat)] * 10 + Math.min(stat.streak, appSettings.masteredStreak);
     };
     qOrder = qOrder.slice().sort((a, b) => sortKey(a) - sortKey(b));
     for(let p = 0; p < qOrder.length; p++){
@@ -2490,12 +2593,12 @@ function renderQuestion(){
     // % đã thuộc là của riêng câu đang xem (streak đúng liên tiếp đã cách quãng / ngưỡng đã thuộc),
     // không phải tiến độ cả phiên. Dùng chung cho mọi chế độ vì giờ cùng đọc 1 nguồn dữ liệu.
     const stat = adaptiveStatFor(migrateLegacyMasteryIfNeeded(currentHp), item._qid);
-    const qPct = Math.round(Math.min(stat.streak, ADAPTIVE_MASTERED_STREAK) / ADAPTIVE_MASTERED_STREAK * 100);
+    const qPct = Math.round(Math.min(stat.streak, appSettings.masteredStreak) / appSettings.masteredStreak * 100);
     document.getElementById('mastery-pct').textContent = `${qPct}% đã thuộc`;
     document.getElementById('progress-fill').style.width = `${Math.round((currentIndex/qOrder.length)*100)}%`;
   }
   let qTag = '';
-  if(!isExam && slotIsRepeat[currentIndex]) qTag = ' · Ôn lại';
+  if(!isExam && slotIsRepeat[currentIndex]) qTag = ' · Ôn lại câu sai';
   else if(adaptiveSessionActive) qTag = ' · ' + (ADAPTIVE_GROUP_LABEL[adaptiveGroupOfQ[qIdx]] || '');
   else if(specialSessionActive && activeSpecialSet) qTag = ' · ' + activeSpecialSet.label;
   else if(!isExam && slotIsPriority[currentIndex]) qTag = ' · Chưa thuộc, cần ôn thêm';
