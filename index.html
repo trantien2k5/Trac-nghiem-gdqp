@@ -1175,7 +1175,7 @@
       <div class="answer-modal-title" id="answer-modal-title">Chính xác!</div>
       <div class="answer-modal-correct answer-modal-wrong-pick hidden" id="answer-modal-wrong-pick"></div>
       <div class="answer-modal-correct hidden" id="answer-modal-correct"></div>
-      <div class="explain-box hidden" id="answer-modal-explain"><span class="explain-icon">💡</span><span><span class="explain-label" id="answer-modal-explain-label">Mẹo:</span><span id="answer-modal-explain-text"></span></span></div>
+      <div class="explain-box hidden" id="answer-modal-explain"><span class="explain-icon">💡</span><span><span class="explain-label" id="answer-modal-explain-label">Giải thích:</span><span id="answer-modal-explain-text"></span></span></div>
       <button class="btn btn-primary" id="answer-modal-next" style="width:100%; margin-top:16px;">
         <span id="answer-modal-next-label">Tiếp tục</span>
         <span class="btn-spinner hidden" id="answer-modal-next-spinner"></span>
@@ -2429,7 +2429,7 @@ function showAnswerPopup(isCorrect, item, pickedText){
   const tip = isCorrect ? item.explain : (item.wrongTip || item.explain);
   const explainBox = document.getElementById('answer-modal-explain');
   if(tip){
-    document.getElementById('answer-modal-explain-label').textContent = isCorrect ? 'Mẹo:' : 'Vì sao sai:';
+    document.getElementById('answer-modal-explain-label').textContent = isCorrect ? 'Giải thích:' : 'Vì sao sai:';
     document.getElementById('answer-modal-explain-text').textContent = tip;
     explainBox.classList.remove('hidden');
     explainBox.classList.toggle('wrong-tip', !isCorrect);
@@ -2711,7 +2711,7 @@ function renderReviewList(){
       ${(() => {
         const tip = isCorrect ? item.explain : (item.wrongTip || item.explain);
         if(!tip) return '';
-        const label = isCorrect ? 'Mẹo:' : 'Vì sao sai:';
+        const label = isCorrect ? 'Giải thích:' : 'Vì sao sai:';
         const cls = isCorrect ? 'explain-box' : 'explain-box wrong-tip';
         return `<div class="${cls}" style="margin:8px 0 0;"><span class="explain-icon">💡</span><span><span class="explain-label">${label}</span>${escapeHtml(tip)}</span></div>`;
       })()}
