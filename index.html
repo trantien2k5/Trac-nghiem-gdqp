@@ -464,17 +464,17 @@
     background: var(--bg-elev);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 22px 18px;
+    padding: 18px 18px;
     box-shadow: var(--shadow-card);
   }
   .qcard .qnum{
     font-size:12px; font-weight:700; color: var(--indigo); letter-spacing:0.05em; margin-bottom:10px;
   }
   .mastery-pct{
-    font-size:12px; font-weight:600; color: var(--text-dim); margin-bottom:8px;
+    font-size:12px; font-weight:600; color: var(--text-dim); margin-bottom:3px;
   }
   .qcard-head{
-    display:flex; align-items:center; justify-content:space-between; margin-bottom:2px;
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;
   }
   .qcard-head .qnum{ margin-bottom:0; }
   .flag-btn{
@@ -925,9 +925,9 @@
   <div class="modal-sheet">
     <div class="modal-title">⚙️ Cài đặt học tập</div>
     <div class="settings-row">
-      <div class="settings-label">Số lần làm đúng để tính "đã thuộc"</div>
-      <div class="settings-desc">Mặc định 3 lần (cách quãng dần) mới chắc là nhớ thật. Giảm xuống để qua nhanh hơn, ít bị hỏi lại — nhưng dễ quên hơn về sau.</div>
-      <div class="settings-segmented" id="mastered-streak-segmented">
+      <div class="settings-label">Số lần làm đúng liên tiếp để qua câu sai (trong phiên này)</div>
+      <div class="settings-desc">Câu vừa trả lời sai trong lúc làm bài sẽ được hỏi lại — chỉnh số lần cần đúng liên tiếp mới thôi hỏi lại. Chỉ áp dụng cho phiên đang làm, không ảnh hưởng thuật toán "đã thuộc" lâu dài (vẫn luôn là 3 lần, cố định).</div>
+      <div class="settings-segmented" id="session-pass-streak-segmented">
         <button class="filter-chip" data-value="1" type="button">1 lần</button>
         <button class="filter-chip" data-value="2" type="button">2 lần</button>
         <button class="filter-chip" data-value="3" type="button">3 lần</button>
@@ -1306,7 +1306,7 @@
   <div id="explain-modal" class="modal-overlay center-modal hidden">
     <div class="modal-sheet explain-modal-sheet">
       <div class="explain-modal-title" id="explain-modal-title">💡 Giải thích</div>
-      <div class="explain-box" id="explain-modal-box"><span class="explain-icon">💡</span><span><span class="explain-label" id="explain-modal-label">Giải thích:</span><span id="explain-modal-text"></span></span></div>
+      <div class="explain-box" id="explain-modal-box"><span id="explain-modal-text"></span></div>
       <button class="btn btn-primary" id="explain-modal-close" style="width:100%; margin-top:16px;">Đóng</button>
     </div>
   </div>
@@ -1447,19 +1447,25 @@ function liveStreak(a){
    thực sự tiến thêm 1 bước streak, để đếm khoảng cách — tách riêng
    khỏi lastSeen vì một lần "chạm hụt" không được phép làm mới đồng hồ
    đếm khoảng cách).
-   "Đã thuộc" = đúng liên tiếp đủ appSettings.masteredStreak lần (mặc định 3, người dùng tự chỉnh được
-   trong Cài đặt) — nhưng mỗi lần đúng chỉ được TÍNH vào chuỗi đó nếu cách lần đúng trước đủ xa (xem
-   ADAPTIVE_MIN_GAP_STEPS, tăng dần theo từng bước; đếm theo số câu đã trả lời, không phải theo phiên
-   học) — trả lời đúng liền tay lại trong lúc vừa mới thấy câu đó thì không tính là đã ôn lại thật sự.
+   "Đã thuộc" = đúng liên tiếp đủ ADAPTIVE_MASTERED_STREAK lần — cố định 3, KHÔNG tuỳ chỉnh được (đây là
+   thuật toán tính độ thuộc thật sự dùng chung mọi nơi — Luyện tập/Thi thử/Luyện tập thông minh/Thống kê —
+   nên phải giữ cố định để dữ liệu nhất quán, không phụ thuộc máy/thời điểm chỉnh cài đặt). Mỗi lần đúng
+   chỉ được TÍNH vào chuỗi đó nếu cách lần đúng trước đủ xa (xem ADAPTIVE_MIN_GAP_STEPS, tăng dần theo
+   từng bước; đếm theo số câu đã trả lời, không phải theo phiên học) — trả lời đúng liền tay lại trong lúc
+   vừa mới thấy câu đó thì không tính là đã ôn lại thật sự.
    ========================================================= */
+const ADAPTIVE_MASTERED_STREAK = 3;
 /* ---------- Cài đặt học tập (lưu riêng theo máy, không phải theo học phần) ----------
-   masteredStreak: xem giải thích ở trên — 1/2/3 lần, càng thấp thì càng nhanh được tính "đã thuộc"
-   nhưng càng dễ quên lại về sau (ít được xác nhận cách quãng đủ chắc).
+   Chỉ ảnh hưởng hành vi TRONG 1 PHIÊN HỌC đang làm — không đụng tới thuật toán "đã thuộc" lâu dài ở trên.
+   sessionPassStreak: 1 câu từng trả lời SAI trong phiên này thì phải trả lời ĐÚNG LIÊN TIẾP đủ số lần
+   này (trong chính phiên đó) mới thôi bị hỏi lại; sai giữa chừng thì tính lại từ đầu. Mặc định 3, chỉnh
+   xuống 1-2 để qua nhanh hơn trong phiên. Không lưu lại gì cho lần học sau, cũng không ảnh hưởng độ thuộc
+   thật (ADAPTIVE_MASTERED_STREAK) — chỉ là "còn hỏi lại trong phiên này hay không".
    prioritizeWrong: khi làm 1 đề Luyện tập cố định, có đẩy câu chưa thuộc/hay sai lên đầu đề hay không
    (tắt thì giữ nguyên thứ tự gốc của đề). Không ảnh hưởng Luyện tập thông minh/Ôn câu sai — 2 chế độ đó
    vốn đã ưu tiên câu sai/chưa thuộc theo đúng mục đích riêng, không cần tuỳ chỉnh thêm. */
 const SETTINGS_KEY = 'gdqp_settings_v1';
-const DEFAULT_SETTINGS = { masteredStreak: 3, prioritizeWrong: true };
+const DEFAULT_SETTINGS = { sessionPassStreak: 3, prioritizeWrong: true };
 function loadSettings(){
   try{
     const raw = localStorage.getItem(SETTINGS_KEY);
@@ -1494,7 +1500,7 @@ function adaptiveStatFor(data, id){
 function adaptiveGroup(stat){
   const seen = stat.correctCount > 0 || stat.wrongCount > 0;
   if(!seen) return 'new';
-  if(stat.streak >= appSettings.masteredStreak) return 'mastered';
+  if(stat.streak >= ADAPTIVE_MASTERED_STREAK) return 'mastered';
   if(stat.streak === 0) return 'wrong';
   return 'shaky';
 }
@@ -1553,7 +1559,7 @@ function migrateLegacyMasteryIfNeeded(hp){
       const oldStreak = r.mastery[localIndex] || 0;
       const wasWrong = (r.wrongIndices || []).includes(localIndex);
       // oldStreak >= 3 ở hệ cũ vốn đã là "đã thuộc", giữ nguyên giá trị streak (không cần quy đổi thang
-      // điểm nào khác) vì ngưỡng "đã thuộc" mới cũng chính là streak >= appSettings.masteredStreak.
+      // điểm nào khác) vì ngưỡng "đã thuộc" mới cũng chính là streak >= ADAPTIVE_MASTERED_STREAK.
       data.q[q.id] = {
         correctCount: oldStreak,
         wrongCount: wasWrong ? 1 : 0,
@@ -1690,6 +1696,9 @@ let slotIsPriority = [];     // slot -> shown early because it was wrong on the 
 let firstAnswers = [];       // original index -> answer given on first attempt (used for scoring)
 let mastered = [];           // original index -> answered correctly at least once (practice mode)
 let appearCount = [];        // original index -> how many times shown (practice mode, caps repeats)
+let sessionCorrectStreak = []; // original index -> số lần đúng LIÊN TIẾP trong phiên NÀY (chỉ có ý nghĩa
+                                // với câu đã từng sai trong phiên — xem everWrongInSession/appSettings.sessionPassStreak)
+let everWrongInSession = [];   // original index -> câu này đã từng bị trả lời sai ít nhất 1 lần trong phiên hiện tại chưa
 let sessionQueueCap = Infinity; // trần tổng số câu hiện ra trong 1 phiên (kể cả gặp lại), tránh phiên "phình to" quá mệt
 const MAX_APPEARANCES = 4;   // safety cap so a missed question doesn't repeat forever
 const REPEAT_GAP = 3;        // show a missed question again a few cards later, not immediately
@@ -1985,11 +1994,11 @@ document.getElementById('ocr-download-btn').addEventListener('click', () => {
 document.getElementById('ocr-back').addEventListener('click', () => showScreen('hplist'));
 
 /* =========================================================
-   CÀI ĐẶT HỌC TẬP (masteredStreak / prioritizeWrong — xem appSettings)
+   CÀI ĐẶT HỌC TẬP (sessionPassStreak / prioritizeWrong — xem appSettings)
    ========================================================= */
 function refreshSettingsModalUi(){
-  document.querySelectorAll('#mastered-streak-segmented .filter-chip').forEach(btn => {
-    btn.classList.toggle('active', Number(btn.dataset.value) === appSettings.masteredStreak);
+  document.querySelectorAll('#session-pass-streak-segmented .filter-chip').forEach(btn => {
+    btn.classList.toggle('active', Number(btn.dataset.value) === appSettings.sessionPassStreak);
   });
   document.getElementById('prioritize-wrong-toggle').checked = appSettings.prioritizeWrong;
 }
@@ -2008,9 +2017,9 @@ document.getElementById('settings-modal-close').addEventListener('click', closeS
 document.getElementById('settings-modal').addEventListener('click', (e) => {
   if(e.target.id === 'settings-modal') closeSettingsModal();
 });
-document.querySelectorAll('#mastered-streak-segmented .filter-chip').forEach(btn => {
+document.querySelectorAll('#session-pass-streak-segmented .filter-chip').forEach(btn => {
   btn.addEventListener('click', () => {
-    appSettings.masteredStreak = Number(btn.dataset.value);
+    appSettings.sessionPassStreak = Number(btn.dataset.value);
     saveSettings();
     refreshSettingsModalUi();
   });
@@ -2273,7 +2282,7 @@ function startQuiz(setIndex, mode){
     const groupOf = (i) => adaptiveGroup(adaptiveStatFor(masteryData, currentQuestions[i]._qid));
     const sortKey = (i) => {
       const stat = adaptiveStatFor(masteryData, currentQuestions[i]._qid);
-      return ADAPTIVE_GROUP_SORT_RANK[adaptiveGroup(stat)] * 10 + Math.min(stat.streak, appSettings.masteredStreak);
+      return ADAPTIVE_GROUP_SORT_RANK[adaptiveGroup(stat)] * 10 + Math.min(stat.streak, ADAPTIVE_MASTERED_STREAK);
     };
     qOrder = qOrder.slice().sort((a, b) => sortKey(a) - sortKey(b));
     for(let p = 0; p < qOrder.length; p++){
@@ -2286,6 +2295,8 @@ function startQuiz(setIndex, mode){
   firstAnswers = new Array(currentQuestions.length).fill(null);
   mastered = new Array(currentQuestions.length).fill(false);
   appearCount = new Array(currentQuestions.length).fill(0);
+  sessionCorrectStreak = new Array(currentQuestions.length).fill(0);
+  everWrongInSession = new Array(currentQuestions.length).fill(false);
   flagged = new Array(currentQuestions.length).fill(false);
   timeUp = false;
   quizStartTime = Date.now();
@@ -2353,6 +2364,8 @@ function startSpecialSession(hp, special){
   firstAnswers = new Array(currentQuestions.length).fill(null);
   mastered = new Array(currentQuestions.length).fill(false);
   appearCount = new Array(currentQuestions.length).fill(0);
+  sessionCorrectStreak = new Array(currentQuestions.length).fill(0);
+  everWrongInSession = new Array(currentQuestions.length).fill(false);
   flagged = new Array(currentQuestions.length).fill(false);
   timeUp = false;
   quizStartTime = Date.now();
@@ -2406,6 +2419,8 @@ function startReviewSession(hp){
   firstAnswers = new Array(currentQuestions.length).fill(null);
   mastered = new Array(currentQuestions.length).fill(false);
   appearCount = new Array(currentQuestions.length).fill(0);
+  sessionCorrectStreak = new Array(currentQuestions.length).fill(0);
+  everWrongInSession = new Array(currentQuestions.length).fill(false);
   flagged = new Array(currentQuestions.length).fill(false);
   timeUp = false;
   quizStartTime = Date.now();
@@ -2453,6 +2468,8 @@ function startAdaptiveSession(hp){
   firstAnswers = new Array(currentQuestions.length).fill(null);
   mastered = new Array(currentQuestions.length).fill(false);
   appearCount = new Array(currentQuestions.length).fill(0);
+  sessionCorrectStreak = new Array(currentQuestions.length).fill(0);
+  everWrongInSession = new Array(currentQuestions.length).fill(false);
   flagged = new Array(currentQuestions.length).fill(false);
   timeUp = false;
   quizStartTime = Date.now();
@@ -2542,7 +2559,7 @@ function renderQuestion(){
     // % đã thuộc là của riêng câu đang xem (streak đúng liên tiếp đã cách quãng / ngưỡng đã thuộc),
     // không phải tiến độ cả phiên. Dùng chung cho mọi chế độ vì giờ cùng đọc 1 nguồn dữ liệu.
     const stat = adaptiveStatFor(migrateLegacyMasteryIfNeeded(currentHp), item._qid);
-    const qPct = Math.round(Math.min(stat.streak, appSettings.masteredStreak) / appSettings.masteredStreak * 100);
+    const qPct = Math.round(Math.min(stat.streak, ADAPTIVE_MASTERED_STREAK) / ADAPTIVE_MASTERED_STREAK * 100);
     document.getElementById('mastery-pct').textContent = `${qPct}% đã thuộc`;
     document.getElementById('progress-fill').style.width = `${Math.round((currentIndex/qOrder.length)*100)}%`;
   }
@@ -2699,14 +2716,25 @@ function selectAnswer(optText){
   // nhưng đổi sang đáp án khác vẫn được ghi nhận đúng theo lựa chọn mới nhất — cùng lỗi và cách sửa như
   // firstAnswers ở trên (trước đây chặn theo "chỉ lần bấm đầu tiên trên slot", bỏ sót mọi lần đổi ý).
   if(answerChangedOnSlot && item._qid) applyAdaptiveUpdate(currentHp.id, item._qid, isCorrect);
+  const repeatGap = () => adaptiveSessionActive ? (5 + Math.floor(Math.random() * 4)) : REPEAT_GAP;
   if(isCorrect){
     mastered[qIdx] = true;
+    // Câu từng sai trong phiên này thì phải đúng liên tiếp đủ appSettings.sessionPassStreak lần (trong
+    // CHÍNH phiên đang làm) mới thôi bị hỏi lại — chưa đủ thì tiếp tục lên lịch hỏi lại như 1 câu sai,
+    // không phải chỉ cần đúng 1 lần là xong. Không ảnh hưởng độ thuộc lâu dài (ADAPTIVE_MASTERED_STREAK).
+    if(currentMode === 'practice' && everWrongInSession[qIdx]){
+      sessionCorrectStreak[qIdx]++;
+      if(sessionCorrectStreak[qIdx] < appSettings.sessionPassStreak){
+        mastered[qIdx] = false;
+        scheduleRepeat(qIdx, repeatGap());
+      }
+    }
   } else {
     mastered[qIdx] = false;
+    everWrongInSession[qIdx] = true;
+    sessionCorrectStreak[qIdx] = 0;
     if(currentMode === 'practice'){
-      // Adaptive: gặp lại sau khoảng 5-8 câu (không hỏi ngay, tránh chỉ nhớ đáp án); các chế độ khác giữ REPEAT_GAP cũ.
-      const gap = adaptiveSessionActive ? (5 + Math.floor(Math.random() * 4)) : REPEAT_GAP;
-      scheduleRepeat(qIdx, gap);
+      scheduleRepeat(qIdx, repeatGap());
     }
   }
   renderQuestion();
@@ -2722,7 +2750,6 @@ function showExplainModal(){
   const tip = isCorrect ? item.explain : (item.wrongTip || item.explain);
   if(!tip) return;
   document.getElementById('explain-modal-title').textContent = isCorrect ? '💡 Giải thích' : '💡 Vì sao sai';
-  document.getElementById('explain-modal-label').textContent = isCorrect ? 'Giải thích:' : 'Vì sao sai:';
   document.getElementById('explain-modal-text').textContent = tip;
   document.getElementById('explain-modal-box').classList.toggle('wrong-tip', !isCorrect);
   document.getElementById('explain-modal').classList.remove('hidden');
