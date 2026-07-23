@@ -1457,8 +1457,13 @@ let appSettings = loadSettings();
 // từng bước: từ streak 0->1 không cần cách (vừa sai xong, sửa ngay); 1->2 cách >=5 câu; 2->3 (chốt "đã
 // thuộc") cách >=10 câu — càng gần mốc thuộc càng cần cách xa hơn để chắc là nhớ thật, không phải nhớ tạm.
 const ADAPTIVE_MIN_GAP_STEPS = [0, 5, 10];
-const ADAPTIVE_SESSION_SIZE = 30; // chia hết cho 40/30/20/10% nên tỉ lệ chọn câu không lệch vì làm tròn
-const ADAPTIVE_RATIOS = { new: 0.4, wrong: 0.3, shaky: 0.2, mastered: 0.1 };
+const ADAPTIVE_SESSION_SIZE = 30; // chia hết cho tỉ lệ ADAPTIVE_RATIOS bên dưới nên tỉ lệ chọn câu không lệch vì làm tròn
+// Nghiêng mạnh về "hay sai" (40% — gấp rưỡi bản cũ) vì đây là chỗ mất điểm nhiều nhất trong thời gian
+// ngắn: sai 1 lần rồi bỏ đó thì gần như chắc quên lại y hệt lúc thi. "Chưa chắc" cũng tăng nhẹ (25%) vì
+// đang học dở, củng cố nốt rẻ hơn là để rơi ngược lại thành "hay sai". "Chưa làm" giảm (25%) — vẫn đảm
+// bảo có exposure lần đầu, chỉ không còn áp đảo suất của các câu đang yếu. "Đã thuộc" giữ 10% để chống
+// quên chứ không cắt hẳn — cắt hẳn sẽ khiến câu tưởng chắc rồi bị quên ngược lại đúng lúc thi.
+const ADAPTIVE_RATIOS = { new: 0.25, wrong: 0.4, shaky: 0.25, mastered: 0.1 };
 const ADAPTIVE_GROUP_LABEL = { new: 'Câu mới', wrong: 'Hay sai', shaky: 'Chưa chắc', mastered: 'Đã thuộc' };
 
 function adaptiveKey(hpId){ return 'quiz_' + hpId + '_adaptive_v1'; }
@@ -1551,10 +1556,11 @@ function migrateLegacyMasteryIfNeeded(hp){
   return data;
 }
 
-// Chọn ~ADAPTIVE_SESSION_SIZE câu theo tỉ lệ 40% chưa làm / 30% hay sai / 20% chưa chắc / 10% đã thuộc.
-// Nhóm nào không đủ số lượng thì phần thiếu được bù từ các nhóm khác (ưu tiên hay sai > chưa chắc > chưa làm > đã thuộc).
-// Thứ tự hiển thị trong phiên: hay sai/chưa làm/chưa chắc xen kẽ ngẫu nhiên lên ĐẦU, đã thuộc bị đẩy
-// xuống CUỐI phiên (tạm gác lại) — xem khối xen kẽ bên dưới.
+// Chọn ~ADAPTIVE_SESSION_SIZE câu theo tỉ lệ ADAPTIVE_RATIOS (mặc định nghiêng mạnh về "hay sai" — xem
+// giải thích tại khai báo hằng số). Nhóm nào không đủ số lượng thì phần thiếu được bù từ các nhóm khác
+// (ưu tiên hay sai > chưa chắc > chưa làm > đã thuộc). Thứ tự hiển thị trong phiên: hay sai/chưa làm/
+// chưa chắc xen kẽ có trọng số lên ĐẦU, đã thuộc bị đẩy xuống CUỐI phiên (tạm gác lại) — xem khối xen kẽ
+// bên dưới.
 function pickAdaptiveQuestions(hp){
   const data = migrateLegacyMasteryIfNeeded(hp);
   const groups = { new: [], wrong: [], shaky: [], mastered: [] };
@@ -1566,10 +1572,17 @@ function pickAdaptiveQuestions(hp){
   // (mong manh hơn) thì càng cần ôn lại sớm. Câu chưa từng sai lần nào thì được "để yên" lâu hơn — dồn
   // suất ôn ít ỏi (10%/phiên) đúng vào chỗ dễ quên nhất thay vì rải đều, giảm công ôn thừa cho câu đã chắc.
   const masteredRisk = (item) => (data.seq - item.lastSeen) + item.wrongCount * 15;
+  // Điểm khẩn cấp cho câu HAY SAI/CHƯA CHẮC: trước đây chỉ xếp theo lâu-chưa-gặp (lastSeen), giờ cộng
+  // thêm số lần từng sai — 1 câu đã sai 3-4 lần với riêng người học này (điểm yếu thật sự, không phải
+  // ngẫu nhiên 1 lần lỡ tay) được đẩy lên hẳn trước 1 câu mới sai 1 lần dù lâu chưa gặp hơn. Đây chính là
+  // phần "cá nhân hoá theo đúng điểm yếu của từng người" — không xử lý đồng đều mọi câu trong cùng nhóm.
+  const urgency = (item) => (data.seq - item.lastSeen) + item.wrongCount * 20;
   const order = ['new', 'wrong', 'shaky', 'mastered'];
   order.forEach(g => {
     if(g === 'mastered'){
       groups[g] = shuffle(groups[g]).sort((a, b) => masteredRisk(b) - masteredRisk(a));
+    } else if(g === 'wrong' || g === 'shaky'){
+      groups[g] = shuffle(groups[g]).sort((a, b) => urgency(b) - urgency(a));
     } else {
       groups[g] = shuffle(groups[g]).sort((a, b) => a.lastSeen - b.lastSeen); // lâu chưa gặp lên trước
     }
@@ -1615,7 +1628,7 @@ function pickAdaptiveQuestions(hp){
   // (đang học dở dang, streak > 0) đỡ khẩn cấp hơn 2 nhóm kia vì đã có ít nhất 1 lần đúng gần đây.
   // Trọng số quyết định TẦN SUẤT xuất hiện trong vòng xen kẽ (không phải xếp cứng theo khối), nên vẫn
   // giữ được cảm giác trộn lẫn tự nhiên thay vì dồn cục toàn "hay sai" rồi mới đến nhóm khác.
-  const priorityWeight = { wrong: 3, new: 2, shaky: 1 };
+  const priorityWeight = { wrong: 4, new: 2, shaky: 2 };
   const weightedRefs = [];
   Object.keys(priorityWeight).forEach(g => {
     for(let i = 0; i < priorityWeight[g]; i++) weightedRefs.push(picked[g]); // cùng tham chiếu mảng -> shift() dùng chung, không nhân bản câu

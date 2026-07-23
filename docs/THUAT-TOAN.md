@@ -163,23 +163,35 @@ Hàm `pickAdaptiveQuestions(hp)` chọn ra một phiên học mới, ưu tiên c
 nhiều hơn nhưng vẫn có đủ 4 loại câu để tránh nhàm chán / học lệch.
 
 ```js
-const ADAPTIVE_SESSION_SIZE = 30; // chia hết cho 40/30/20/10% -> tỉ lệ không lệch vì làm tròn
-const ADAPTIVE_RATIOS = { new: 0.4, wrong: 0.3, shaky: 0.2, mastered: 0.1 };
+const ADAPTIVE_SESSION_SIZE = 30; // chia hết cho tỉ lệ ADAPTIVE_RATIOS -> tỉ lệ không lệch vì làm tròn
+const ADAPTIVE_RATIOS = { new: 0.25, wrong: 0.4, shaky: 0.25, mastered: 0.1 };
 ```
+
+Tỉ lệ này nghiêng hẳn về nhóm `wrong` (40%, gấp rưỡi bản đầu 30%) — đây là
+nhóm tốn ít công nhất để lấy lại điểm nhất (đã từng làm, chỉ cần nhớ lại đúng
+chỗ sai) nên đáng được ưu tiên nhất khi thời gian ôn có hạn. `shaky` cũng tăng
+nhẹ (25%) vì đang học dở, củng cố nốt rẻ hơn để rơi ngược lại thành `wrong`.
+`new` giảm (25%) — vẫn đảm bảo có exposure lần đầu, chỉ không còn áp đảo suất
+của các câu đang yếu. `mastered` giữ nguyên 10% để chống quên chứ không cắt
+hẳn — cắt hẳn sẽ khiến câu tưởng chắc rồi bị quên ngược đúng lúc cần nhất.
 
 **Các bước:**
 
 1. Gộp toàn bộ câu hỏi của học phần vào 4 nhóm (`new`/`wrong`/`shaky`/`mastered`)
    theo `adaptiveGroup`.
 2. Mỗi nhóm được xáo trộn ngẫu nhiên rồi sắp xếp:
-   - `new`/`wrong`/`shaky`: sắp theo `lastSeen` tăng dần (câu lâu chưa xuất
-     hiện được ưu tiên lên đầu) — vừa có yếu tố ngẫu nhiên vừa đảm bảo công
-     bằng xoay vòng.
+   - `new`: sắp theo `lastSeen` tăng dần (câu lâu chưa xuất hiện được ưu tiên
+     lên đầu) — vừa có yếu tố ngẫu nhiên vừa đảm bảo công bằng xoay vòng.
+   - `wrong`/`shaky`: sắp theo **điểm khẩn cấp** (`urgency`) giảm dần, không
+     dùng thuần `lastSeen` — xem công thức bên dưới. Đây là điểm cá nhân hoá
+     mạnh nhất: 2 câu cùng nhóm nhưng độ khó thực tế với riêng người học này
+     khác nhau (1 câu sai 4 lần vs. 1 câu mới sai 1 lần) được xếp thứ tự khác
+     nhau, không coi 2 câu "hay sai" là ngang nhau.
    - `mastered`: sắp theo **điểm rủi ro quên** giảm dần, không dùng thuần
      `lastSeen` — xem công thức bên dưới.
 3. Tính chỉ tiêu (`quota`) mỗi nhóm = `round(target * tỉ lệ)`, phần dư do làm
    tròn được cộng bù vào nhóm `new`. Với `target = 30` thì các chỉ tiêu này
-   luôn tròn số (12/9/6/3), không bao giờ lệch tỉ lệ.
+   luôn tròn số (7/12/8/3), không bao giờ lệch tỉ lệ.
 4. Nếu một phiên không đủ câu để lấp đầy `target` (điển hình: nhóm `new` đã
    cạn vì đã học hết học phần), phần thiếu được bù theo thứ tự ưu tiên:
    - **Xen kẽ round-robin giữa `wrong` và `shaky`** (không rút cạn hết nhóm
@@ -190,9 +202,9 @@ const ADAPTIVE_RATIOS = { new: 0.4, wrong: 0.3, shaky: 0.2, mastered: 0.1 };
    - Chỉ khi cả `wrong` và `shaky` cũng cạn (gần như toàn bộ học phần đã
      thuộc) mới lấy thêm từ `new`/`mastered`.
 5. **Xen kẽ có trọng số** 3 nhóm cần ưu tiên (`wrong`/`new`/`shaky`, trọng số
-   `3:2:1`) để luôn nằm ở **đầu** phiên, mức khẩn cấp giảm dần đúng thứ tự:
+   `4:2:2`) để luôn nằm ở **đầu** phiên, mức khẩn cấp giảm dần đúng thứ tự:
    câu hay sai (vừa mất streak, dễ quên lại nếu để lâu) > câu mới (cần được
-   giới thiệu) > câu chưa chắc (đã có ít nhất 1 lần đúng gần đây, đỡ khẩn cấp
+   giới thiệu) ≈ câu chưa chắc (đã có ít nhất 1 lần đúng gần đây, đỡ khẩn cấp
    hơn). Trọng số quyết định **tần suất** xuất hiện trong vòng xen kẽ (không
    xếp cứng theo khối liền nhau), nên vẫn có cảm giác trộn tự nhiên thay vì
    dồn cục toàn "hay sai" rồi mới tới nhóm khác.
@@ -201,6 +213,19 @@ const ADAPTIVE_RATIOS = { new: 0.4, wrong: 0.3, shaky: 0.2, mastered: 0.1 };
    gần như chắc chắn chỉ là câu đã thuộc (ít quan trọng nhất lúc này), còn
    thời gian học được dồn hết cho câu thực sự cần ôn trước. Thứ tự bên trong
    đoạn này giữ nguyên thứ tự rủi ro-quên-cao-lên-trước đã sắp ở bước 2.
+
+**Điểm khẩn cấp cho nhóm `wrong`/`shaky`** (`urgency`, càng cao càng cần ôn
+sớm — đây là công thức mới thêm để cá nhân hoá sâu hơn trong cùng 1 nhóm):
+
+```js
+const urgency = (item) => (data.seq - item.lastSeen) + item.wrongCount * 20;
+```
+
+Cùng công thức dạng với `masteredRisk` bên dưới nhưng hệ số phạt theo
+`wrongCount` cao hơn (20 thay vì 15) vì ở nhóm này việc "từng sai nhiều lần"
+quan trọng hơn cả độ lâu-chưa-gặp — 1 câu vừa mới thấy nhưng đã sai liên tục
+nhiều lần là dấu hiệu rõ ràng của một lỗ hổng kiến thức thật sự, cần ưu tiên
+hơn hẳn 1 câu lâu chưa gặp nhưng chỉ từng sai 1 lần.
 
 **Điểm rủi ro quên cho nhóm `mastered`** (`masteredRisk`, càng cao càng cần
 ôn lại sớm dù đã "thuộc"):
