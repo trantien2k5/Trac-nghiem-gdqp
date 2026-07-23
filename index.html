@@ -120,7 +120,7 @@
 
   /* ---------- Home screen ---------- */
   .home-hero{
-    padding: 28px 20px 6px;
+    padding: 60px 20px 6px; /* chừa chỗ cho nút hamburger cố định góc trên trái (.menu-toggle) */
   }
   .eyebrow{
     font-size:12px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase;
@@ -265,25 +265,54 @@
   }
   .feedback-link:active{ opacity:0.7; }
 
-  /* ---------- Bottom tabs ---------- */
-  #screen-hplist, #screen-home, #screen-stats{ padding-bottom: 76px; }
-  .bottom-tabs{
-    position: fixed; left:0; right:0; bottom:0;
-    max-width: 560px; margin: 0 auto;
-    display:flex;
-    background: var(--bg-glass);
-    backdrop-filter: blur(14px);
-    border-top: 1px solid var(--border);
-    z-index: 40;
-    padding-bottom: env(safe-area-inset-bottom);
+  /* ---------- Menu (nút hamburger + drawer trượt từ trái) ---------- */
+  .menu-toggle{
+    position: fixed; top: 14px; left: 16px; z-index: 200;
+    width: 38px; height: 38px; border-radius: 50%;
+    display:flex; align-items:center; justify-content:center;
+    background: var(--bg-elev); border: 1px solid var(--border); box-shadow: var(--shadow-card);
+    cursor: pointer; color: var(--text);
   }
-  .tab-item{
-    flex:1; display:flex; flex-direction:column; align-items:center; gap:3px;
-    padding: 9px 0 8px; cursor:pointer; color: var(--text-faint);
+  .menu-toggle svg{ width:18px; height:18px; }
+  .menu-toggle:active{ transform: scale(0.92); }
+  .menu-toggle.hidden{ display:none; }
+
+  .drawer-overlay{
+    position: fixed; inset:0; z-index: 210;
+    background: rgba(10,10,16,0.5);
   }
-  .tab-item svg{ width:21px; height:21px; }
-  .tab-item span{ font-size:11px; font-weight:700; }
-  .tab-item.active{ color: var(--indigo); }
+  .drawer-overlay.hidden{ display:none; }
+
+  .side-drawer{
+    position: fixed; top:0; left:0; bottom:0; z-index: 220;
+    width: 78%; max-width: 300px;
+    background: var(--bg-elev);
+    box-shadow: 8px 0 30px rgba(0,0,0,0.3);
+    transform: translateX(-100%);
+    transition: transform .25s cubic-bezier(.4,0,.2,1);
+    display:flex; flex-direction:column;
+    padding: calc(20px + env(safe-area-inset-top)) 0 20px;
+  }
+  .side-drawer.open{ transform: translateX(0); }
+  .drawer-header{
+    display:flex; align-items:center; gap:10px;
+    padding: 0 20px 18px; margin-bottom:10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .drawer-logo{
+    width:38px; height:38px; border-radius:12px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; font-size:18px;
+    background: linear-gradient(135deg, var(--indigo) 0%, var(--indigo-soft) 100%);
+  }
+  .drawer-title{ font-size:16px; font-weight:800; letter-spacing:-0.01em; }
+  .drawer-nav{ display:flex; flex-direction:column; gap:2px; padding: 0 12px; }
+  .drawer-item{
+    display:flex; align-items:center; gap:12px;
+    padding: 12px 12px; border-radius: var(--radius-sm);
+    cursor:pointer; color: var(--text-dim); font-weight:700; font-size:14.5px;
+  }
+  .drawer-item svg{ width:20px; height:20px; flex-shrink:0; }
+  .drawer-item.active{ background: var(--indigo-glow); color: var(--indigo); }
 
   /* ---------- Stats screen ---------- */
   .stats-summary-row{ display:flex; gap:10px; padding: 14px 16px 4px; }
@@ -905,14 +934,24 @@
 
 <div id="app">
 
-  <div class="bottom-tabs" id="bottom-tabs">
-    <div class="tab-item active" id="tab-home">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>
-      <span>Học phần</span>
+  <button id="menu-toggle" class="menu-toggle" aria-label="Mở menu">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+  </button>
+  <div class="drawer-overlay hidden" id="drawer-overlay"></div>
+  <div class="side-drawer" id="side-drawer">
+    <div class="drawer-header">
+      <div class="drawer-logo">🎓</div>
+      <div class="drawer-title">GDQP</div>
     </div>
-    <div class="tab-item" id="tab-stats">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M12 20V4M20 20v-7"/></svg>
-      <span>Thống kê</span>
+    <div class="drawer-nav">
+      <div class="drawer-item active" id="tab-home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>
+        <span>Học phần</span>
+      </div>
+      <div class="drawer-item" id="tab-stats">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M12 20V4M20 20v-7"/></svg>
+        <span>Thống kê</span>
+      </div>
     </div>
   </div>
 
@@ -1661,11 +1700,12 @@ function showScreen(name){
   screens[name].classList.remove('hidden');
   window.scrollTo(0,0);
   const tabsVisible = (name === 'hplist' || name === 'home' || name === 'stats');
-  document.getElementById('bottom-tabs').classList.toggle('hidden', !tabsVisible);
+  updateMenuToggleVisibility(name);
   if(tabsVisible){
     document.getElementById('tab-home').classList.toggle('active', name !== 'stats');
     document.getElementById('tab-stats').classList.toggle('active', name === 'stats');
   }
+  closeDrawer();
   if(name === 'quiz'){
     requestFullscreenSafe();
   } else {
@@ -3008,6 +3048,7 @@ function renderStats(){
   else if(statsView.level === 'streak') renderStatsStreak(container);
   else if(statsView.level === 'wrong') renderStatsWrong(container);
   else renderStatsOverview(container);
+  updateMenuToggleVisibility('stats');
 }
 
 function statsTopbar(title, onBack){
@@ -3336,6 +3377,26 @@ function renderStatsSet(container){
     grid.appendChild(cell);
   }
 }
+
+/* ---------- Menu (hamburger + drawer trượt từ trái) ----------
+   Chỉ hiện nút hamburger ở các màn "gốc" không có back-btn riêng (danh sách học phần, tổng quan thống
+   kê) — tránh đè lên back-btn sẵn có của Học phần/các màn con Thống kê (cùng nằm góc trái, sẽ đè lên
+   nhau nếu hiện cả 2 cùng lúc). Vào sâu hơn thì dùng back-btn của màn đó như bình thường, mở drawer qua
+   màn gốc khi cần đổi hẳn sang tab kia. */
+function updateMenuToggleVisibility(screenName){
+  const showHamburger = (screenName === 'hplist') || (screenName === 'stats' && statsView.level === 'overview');
+  document.getElementById('menu-toggle').classList.toggle('hidden', !showHamburger);
+}
+function openDrawer(){
+  document.getElementById('side-drawer').classList.add('open');
+  document.getElementById('drawer-overlay').classList.remove('hidden');
+}
+function closeDrawer(){
+  document.getElementById('side-drawer').classList.remove('open');
+  document.getElementById('drawer-overlay').classList.add('hidden');
+}
+document.getElementById('menu-toggle').addEventListener('click', openDrawer);
+document.getElementById('drawer-overlay').addEventListener('click', closeDrawer);
 
 document.getElementById('tab-home').addEventListener('click', () => {
   showScreen(currentHp ? 'home' : 'hplist');
