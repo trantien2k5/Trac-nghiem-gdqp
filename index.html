@@ -2461,15 +2461,24 @@ function scheduleRepeat(qIdx, gap){
   slotAnswers.splice(insertPos, 0, null);
   slotIsRepeat.splice(insertPos, 0, true);
   slotIsPriority.splice(insertPos, 0, false);
-  // Đảo lại vị trí 4 đáp án cho lần gặp lại này — tránh việc chỉ nhớ "đáp án nằm ở vị trí C" từ lần
-  // trước thay vì thực sự nhớ nội dung, làm mất tác dụng của việc ôn lại câu sai.
-  currentQuestions[qIdx].options = shuffle(currentQuestions[qIdx].options);
+  // LƯU Ý: KHÔNG đảo đáp án ngay ở đây — currentQuestions[qIdx] là object DÙNG CHUNG cho mọi slot trỏ
+  // tới cùng câu này, kể cả slot đang hiển thị ngay lúc gọi hàm này (vừa mới trả lời xong). Đảo ở đây
+  // từng gây bug: chọn đáp án xong, 4 đáp án tự đảo vị trí ngay trước mắt vì object dùng chung bị đổi
+  // trong khi câu đó vẫn đang hiện trên màn hình. Đảo đúng lúc: xem renderQuestion(), ngay trước khi
+  // hiện lại slot lặp lại này lần đầu (slotAnswers[currentIndex] === null).
 }
 
 function renderQuestion(){
   const qIdx = qOrder[currentIndex];
   const item = currentQuestions[qIdx];
   const isExam = currentMode === 'exam';
+
+  // Câu vừa được hỏi lại (Ôn lại câu sai) và ĐANG hiện lần đầu ở lượt lặp lại này (slotAnswers vẫn null)
+  // thì đảo lại vị trí 4 đáp án — đúng lúc, không đảo sớm hơn (xem giải thích trong scheduleRepeat) để
+  // tránh đảo đáp án ngay trước mắt lúc câu trước đó (cùng object) còn đang hiện kết quả trên màn hình.
+  if(!isExam && slotIsRepeat[currentIndex] && slotAnswers[currentIndex] === null){
+    item.options = shuffle(item.options);
+  }
 
   if(isExam){
     document.getElementById('quiz-counter').textContent = `${currentIndex+1}/${currentQuestions.length}`;
