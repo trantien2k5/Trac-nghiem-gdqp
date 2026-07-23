@@ -182,6 +182,7 @@
     border: 1px solid var(--border);
     background: var(--bg-elev);
     cursor:pointer; font-size:13.5px; font-weight:600; color: var(--text);
+    text-decoration:none;
   }
   .answerkey-link:active{ background: var(--bg-elev-2); }
   .answerkey-link .ak-arrow{ color: var(--text-faint); flex-shrink:0; }
@@ -697,6 +698,13 @@
   .modal-sheet .modal-actions{ display:flex; gap:10px; }
 
   /* ---------- Cài đặt học tập ---------- */
+  .settings-card{
+    margin: 4px 16px 0;
+    background: var(--bg-elev); border:1px solid var(--border); border-radius: var(--radius);
+    padding: 4px 16px; box-shadow: var(--shadow-card);
+  }
+  .settings-links{ display:flex; flex-direction:column; gap:10px; margin: 4px 16px 0; }
+  .settings-links .answerkey-link{ margin:0; }
   .settings-row{ margin: 16px 0; }
   .settings-label{ font-size:14px; font-weight:700; }
   .settings-desc{ font-size:12.5px; color: var(--text-dim); line-height:1.45; margin-top:3px; margin-bottom:10px; }
@@ -904,33 +912,6 @@
   <img id="qr-lightbox-img" src="assets/donate-qr.jpg" alt="Mã QR phóng to">
 </div>
 
-<div id="settings-modal" class="modal-overlay hidden">
-  <div class="modal-sheet">
-    <div class="modal-title">⚙️ Cài đặt học tập</div>
-    <div class="settings-row">
-      <div class="settings-label">Số lần làm đúng liên tiếp để qua câu sai (trong phiên này)</div>
-      <div class="settings-desc">Câu vừa trả lời sai trong lúc làm bài sẽ được hỏi lại — chỉnh số lần cần đúng liên tiếp mới thôi hỏi lại. Chỉ áp dụng cho phiên đang làm, không ảnh hưởng thuật toán "đã thuộc" lâu dài (vẫn luôn là 3 lần, cố định).</div>
-      <div class="settings-segmented" id="session-pass-streak-segmented">
-        <button class="filter-chip" data-value="1" type="button">1 lần</button>
-        <button class="filter-chip" data-value="2" type="button">2 lần</button>
-        <button class="filter-chip" data-value="3" type="button">3 lần</button>
-      </div>
-    </div>
-    <div class="settings-row">
-      <div class="settings-toggle-row">
-        <div>
-          <div class="settings-label">Ưu tiên ôn câu sai</div>
-          <div class="settings-desc" style="margin-bottom:0;">Khi làm 1 đề Luyện tập, câu hay sai/chưa thuộc được đẩy lên đầu đề để ôn trước.</div>
-        </div>
-        <label class="switch">
-          <input type="checkbox" id="prioritize-wrong-toggle">
-          <span class="switch-slider"></span>
-        </label>
-      </div>
-    </div>
-    <button class="btn btn-primary" id="settings-modal-close" style="width:100%; margin-top:4px;">Xong</button>
-  </div>
-</div>
 
 <div id="app">
 
@@ -951,6 +932,10 @@
       <div class="drawer-item" id="tab-stats">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M12 20V4M20 20v-7"/></svg>
         <span>Thống kê</span>
+      </div>
+      <div class="drawer-item" id="tab-settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Cài đặt</span>
       </div>
     </div>
   </div>
@@ -978,12 +963,6 @@
 
     <div class="app-footer">
       <div class="footer-copyright">Ôn Tập Trắc Nghiệm GDQP<span class="dot"></span>© 2026 Trần Tiến<span class="dot"></span><span id="app-version-1"></span></div>
-      <div class="footer-links">
-        <a class="feedback-link" href="https://zalo.me/0382353110" target="_blank" rel="noopener noreferrer">💬 Báo lỗi / góp ý qua Zalo</a>
-        <button class="feedback-link" id="ocr-link-1" type="button">🔎 OCR ảnh/PDF</button>
-        <button class="feedback-link" id="settings-link-1" type="button">⚙️ Cài đặt học tập</button>
-        <button class="feedback-link hidden" id="admin-logout-link-1" type="button">🔓 Đăng xuất admin</button>
-      </div>
     </div>
   </div>
 
@@ -1034,12 +1013,6 @@
     <div class="app-footer">
       <div class="footer-copyright">© 2026 Trần Tiến<span class="dot"></span><span id="app-version-2"></span></div>
       <div class="footer-note">Dữ liệu lưu trên máy bạn (localStorage)</div>
-      <div class="footer-links">
-        <a class="feedback-link" href="https://zalo.me/0382353110" target="_blank" rel="noopener noreferrer">💬 Báo lỗi / góp ý qua Zalo</a>
-        <button class="feedback-link" id="ocr-link-2" type="button">🔎 OCR ảnh/PDF</button>
-        <button class="feedback-link" id="settings-link-2" type="button">⚙️ Cài đặt học tập</button>
-        <button class="feedback-link hidden" id="admin-logout-link-2" type="button">🔓 Đăng xuất admin</button>
-      </div>
     </div>
   </div>
 
@@ -1092,6 +1065,60 @@
   <!-- ============ STATS SCREEN ============ -->
   <div id="screen-stats" class="hidden">
     <div id="stats-content"></div>
+  </div>
+
+  <!-- ============ SETTINGS SCREEN ============ -->
+  <div id="screen-settings" class="hidden">
+    <div class="home-hero">
+      <div class="eyebrow">CÀI ĐẶT</div>
+      <h1>Cài đặt</h1>
+      <p>Tuỳ chỉnh thuật toán học và các công cụ hỗ trợ khác.</p>
+    </div>
+
+    <div class="stats-section-title">Thuật toán học</div>
+    <div class="settings-card">
+      <div class="settings-row">
+        <div class="settings-label">Số lần làm đúng liên tiếp để qua câu sai (trong phiên này)</div>
+        <div class="settings-desc">Câu vừa trả lời sai trong lúc làm bài sẽ được hỏi lại — chỉnh số lần cần đúng liên tiếp mới thôi hỏi lại. Chỉ áp dụng cho phiên đang làm, không ảnh hưởng thuật toán "đã thuộc" lâu dài (vẫn luôn là 3 lần, cố định).</div>
+        <div class="settings-segmented" id="session-pass-streak-segmented">
+          <button class="filter-chip" data-value="1" type="button">1 lần</button>
+          <button class="filter-chip" data-value="2" type="button">2 lần</button>
+          <button class="filter-chip" data-value="3" type="button">3 lần</button>
+        </div>
+      </div>
+      <div class="settings-row" style="margin-bottom:0;">
+        <div class="settings-toggle-row">
+          <div>
+            <div class="settings-label">Ưu tiên ôn câu sai</div>
+            <div class="settings-desc" style="margin-bottom:0;">Khi làm 1 đề Luyện tập, câu hay sai/chưa thuộc được đẩy lên đầu đề để ôn trước.</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="prioritize-wrong-toggle">
+            <span class="switch-slider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-section-title">Công cụ khác</div>
+    <div class="settings-links">
+      <div class="answerkey-link" id="settings-ocr-link">
+        <span>🔎 OCR ảnh/PDF</span>
+        <svg class="ak-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+      <a class="answerkey-link" href="https://zalo.me/0382353110" target="_blank" rel="noopener noreferrer">
+        <span>💬 Báo lỗi / góp ý qua Zalo</span>
+        <svg class="ak-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+      </a>
+      <div class="answerkey-link hidden" id="settings-admin-logout">
+        <span>🔓 Đăng xuất admin</span>
+        <svg class="ak-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+    </div>
+
+    <div class="app-footer">
+      <div class="footer-copyright">Ôn Tập Trắc Nghiệm GDQP<span class="dot"></span>© 2026 Trần Tiến<span class="dot"></span><span id="app-version-3"></span></div>
+    </div>
   </div>
 
   <!-- ============ QUIZ SCREEN ============ -->
@@ -1674,6 +1701,7 @@ const screens = {
   result: document.getElementById('screen-result'),
   answerkey: document.getElementById('screen-answerkey'),
   ocr: document.getElementById('screen-ocr'),
+  settings: document.getElementById('screen-settings'),
 };
 function requestFullscreenSafe(){
   const el = document.documentElement;
@@ -1699,11 +1727,12 @@ function showScreen(name){
   Object.values(screens).forEach(s=>s.classList.add('hidden'));
   screens[name].classList.remove('hidden');
   window.scrollTo(0,0);
-  const tabsVisible = (name === 'hplist' || name === 'home' || name === 'stats');
+  const tabsVisible = (name === 'hplist' || name === 'home' || name === 'stats' || name === 'settings');
   updateMenuToggleVisibility(name);
   if(tabsVisible){
-    document.getElementById('tab-home').classList.toggle('active', name !== 'stats');
+    document.getElementById('tab-home').classList.toggle('active', name === 'hplist' || name === 'home');
     document.getElementById('tab-stats').classList.toggle('active', name === 'stats');
+    document.getElementById('tab-settings').classList.toggle('active', name === 'settings');
   }
   closeDrawer();
   if(name === 'quiz'){
@@ -1782,12 +1811,9 @@ function adminLogout(){
   try{ localStorage.removeItem(ADMIN_SESSION_KEY); }catch(e){}
   window.location.reload();
 }
-['admin-logout-link-1', 'admin-logout-link-2'].forEach(id => {
-  const btn = document.getElementById(id);
-  if(!btn) return;
-  btn.classList.toggle('hidden', !isAdminLoggedIn());
-  btn.addEventListener('click', adminLogout);
-});
+const adminLogoutBtn = document.getElementById('settings-admin-logout');
+adminLogoutBtn.classList.toggle('hidden', !isAdminLoggedIn());
+adminLogoutBtn.addEventListener('click', adminLogout);
 
 /* ---------- Popup chào mừng ---------- */
 // Khi đang khoá bảo trì và chưa đăng nhập admin thì bỏ qua hẳn popup chào mừng — web bị khoá, không có
@@ -1938,41 +1964,23 @@ document.getElementById('ocr-download-btn').addEventListener('click', () => {
   URL.revokeObjectURL(url);
 });
 
-['ocr-link-1', 'ocr-link-2'].forEach(id => {
-  const btn = document.getElementById(id);
-  if(btn) btn.addEventListener('click', () => showScreen('ocr'));
-});
-document.getElementById('ocr-back').addEventListener('click', () => showScreen('hplist'));
+document.getElementById('settings-ocr-link').addEventListener('click', () => showScreen('ocr'));
+document.getElementById('ocr-back').addEventListener('click', () => showScreen('settings'));
 
 /* =========================================================
-   CÀI ĐẶT HỌC TẬP (sessionPassStreak / prioritizeWrong — xem appSettings)
+   TAB CÀI ĐẶT (sessionPassStreak / prioritizeWrong — xem appSettings — + OCR/Zalo/đăng xuất admin)
    ========================================================= */
-function refreshSettingsModalUi(){
+function refreshSettingsScreenUi(){
   document.querySelectorAll('#session-pass-streak-segmented .filter-chip').forEach(btn => {
     btn.classList.toggle('active', Number(btn.dataset.value) === appSettings.sessionPassStreak);
   });
   document.getElementById('prioritize-wrong-toggle').checked = appSettings.prioritizeWrong;
 }
-function openSettingsModal(){
-  refreshSettingsModalUi();
-  document.getElementById('settings-modal').classList.remove('hidden');
-}
-function closeSettingsModal(){
-  document.getElementById('settings-modal').classList.add('hidden');
-}
-['settings-link-1', 'settings-link-2'].forEach(id => {
-  const btn = document.getElementById(id);
-  if(btn) btn.addEventListener('click', openSettingsModal);
-});
-document.getElementById('settings-modal-close').addEventListener('click', closeSettingsModal);
-document.getElementById('settings-modal').addEventListener('click', (e) => {
-  if(e.target.id === 'settings-modal') closeSettingsModal();
-});
 document.querySelectorAll('#session-pass-streak-segmented .filter-chip').forEach(btn => {
   btn.addEventListener('click', () => {
     appSettings.sessionPassStreak = Number(btn.dataset.value);
     saveSettings();
-    refreshSettingsModalUi();
+    refreshSettingsScreenUi();
   });
 });
 document.getElementById('prioritize-wrong-toggle').addEventListener('change', (e) => {
@@ -1992,7 +2000,7 @@ document.getElementById('qr-lightbox').addEventListener('click', () => {
 // thủ công mỗi lần đổi đáng kể. Việc phát hiện có bản mới hay không KHÔNG dựa vào số này (xem khối
 // PHÁT HIỆN BẢN CẬP NHẬT MỚI bên dưới, tự so nội dung thật của index.html nên không thể quên cập nhật).
 const APP_VERSION = 'v1.0';
-['app-version-1', 'app-version-2'].forEach(id => {
+['app-version-1', 'app-version-2', 'app-version-3'].forEach(id => {
   const el = document.getElementById(id);
   if(el) el.textContent = APP_VERSION;
 });
@@ -3384,7 +3392,8 @@ function renderStatsSet(container){
    nhau nếu hiện cả 2 cùng lúc). Vào sâu hơn thì dùng back-btn của màn đó như bình thường, mở drawer qua
    màn gốc khi cần đổi hẳn sang tab kia. */
 function updateMenuToggleVisibility(screenName){
-  const showHamburger = (screenName === 'hplist') || (screenName === 'stats' && statsView.level === 'overview');
+  const showHamburger = (screenName === 'hplist') || (screenName === 'settings')
+    || (screenName === 'stats' && statsView.level === 'overview');
   document.getElementById('menu-toggle').classList.toggle('hidden', !showHamburger);
 }
 function openDrawer(){
@@ -3405,6 +3414,10 @@ document.getElementById('tab-stats').addEventListener('click', () => {
   statsView = { level: 'overview', hpId: null, setIndex: null };
   renderStats();
   showScreen('stats');
+});
+document.getElementById('tab-settings').addEventListener('click', () => {
+  refreshSettingsScreenUi();
+  showScreen('settings');
 });
 
 /* =========================================================
