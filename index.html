@@ -133,20 +133,6 @@
   .home-hero p{
     font-size: 14px; color: var(--text-dim); margin:0; line-height:1.5;
   }
-  .progress-hero{
-    margin: 16px 20px 4px;
-    padding: 18px 20px;
-    border-radius: var(--radius);
-    background: var(--bg-elev);
-    border: 1px solid var(--border);
-    box-shadow: var(--shadow-card);
-  }
-  .progress-hero .ph-label{ font-size:11px; font-weight:800; letter-spacing:0.08em; color: var(--text-faint); }
-  .progress-hero .ph-row{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-top:6px; }
-  .progress-hero .ph-pct{ font-size:28px; font-weight:800; letter-spacing:-0.02em; color: var(--text); }
-  .progress-hero .ph-sub{ font-size:12.5px; color: var(--text-dim); text-align:right; }
-  .progress-hero .ph-track{ margin-top:12px; height:8px; border-radius:6px; background: var(--bg-elev-2); overflow:hidden; }
-  .progress-hero .ph-fill{ height:100%; border-radius:6px; background: linear-gradient(90deg, var(--indigo), var(--indigo-soft)); transition: width 0.3s; }
   .stats-row{
     display:grid; grid-template-columns: 1fr 1fr; gap:10px; padding: 18px 20px 4px;
   }
@@ -179,21 +165,12 @@
     margin-top:10px; padding:7px 16px; border-radius:20px;
     background:#fff; border:none; cursor:pointer; font-family:inherit;
   }
-  .adaptive-cta.continue-set-cta .ac-start-btn{ color:#0f766e; }
-  .adaptive-cta.continue-set-cta{
-    background: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
-    box-shadow: 0 8px 24px -8px rgba(15,118,110,0.5);
-  }
   /* Bọc mũi tên trong 1 vòng tròn nổi bật (giống nút bấm thật) thay vì icon mảnh dễ lẫn vào nền màu —
      nhiều người dùng không nhận ra cả thẻ có thể chạm vào được, chỉ cuộn xuống tìm nút khác. */
   .adaptive-cta .ac-arrow{
     color:#fff; flex-shrink:0;
     width:32px; height:32px; padding:8px; box-sizing:border-box;
     border-radius:50%; background: rgba(255,255,255,0.25);
-  }
-  .adaptive-cta.special-cta{
-    background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
-    box-shadow: 0 8px 24px -8px rgba(217,119,6,0.5);
   }
 
   /* ---------- Link "Xem đáp án & giải thích" + màn hình đáp án ---------- */
@@ -979,52 +956,7 @@
       </div>
       <div class="title" id="home-title">Học phần</div>
     </div>
-    <div class="home-hero">
-      <div class="eyebrow" id="home-eyebrow"></div>
-      <h1>Ôn Tập Trắc Nghiệm</h1>
-      <p id="home-desc"></p>
-    </div>
-
-    <div class="progress-hero">
-      <div class="ph-label">TIẾN ĐỘ HỌC PHẦN</div>
-      <div class="ph-row">
-        <div class="ph-pct" id="ph-pct">0%</div>
-        <div class="ph-sub" id="ph-sub">0/150 câu đã thuộc</div>
-      </div>
-      <div class="ph-track"><div class="ph-fill" id="ph-fill" style="width:0%"></div></div>
-    </div>
-
-    <div class="stats-section-title">▶ Tiếp tục học</div>
-    <div class="adaptive-cta continue-set-cta hidden" id="continue-set-cta">
-      <div class="ac-icon">📄</div>
-      <div class="ac-text">
-        <div class="ac-title" id="continue-set-title">Tiếp tục Đề 1</div>
-        <div class="ac-desc" id="continue-set-desc">Đã làm 7/20</div>
-        <button type="button" class="ac-start-btn">Tiếp tục</button>
-      </div>
-      <svg class="ac-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
-    </div>
-    <div class="adaptive-cta" id="adaptive-cta">
-      <div class="ac-icon">🧠</div>
-      <div class="ac-text">
-        <div class="ac-title">Luyện tập thông minh</div>
-        <div class="ac-desc" id="adaptive-cta-desc">Tự động cá nhân hoá lộ trình ôn tập — không cần tự nghĩ nên học gì, hệ thống lo phần đó.</div>
-        <button type="button" class="ac-start-btn">Bắt đầu</button>
-      </div>
-      <svg class="ac-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
-    </div>
-    <div class="adaptive-cta special-cta hidden" id="special-cta">
-      <div class="ac-icon">🔢</div>
-      <div class="ac-text">
-        <div class="ac-title" id="special-cta-title">Câu số liệu dễ nhầm</div>
-        <div class="ac-desc" id="special-cta-desc"></div>
-        <button type="button" class="ac-start-btn">Bắt đầu</button>
-      </div>
-      <svg class="ac-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
-    </div>
-
-    <div class="stats-section-title">Thống kê</div>
-    <div class="stats-row">
+    <div class="stats-row" style="margin-top:16px;">
       <div class="stat-chip">
         <div class="num" id="stat-attempted">0/8</div>
         <div class="label">Đề đã làm</div>
@@ -1042,6 +974,17 @@
         <div class="label">Độ chính xác</div>
       </div>
     </div>
+
+    <div class="adaptive-cta" id="adaptive-cta">
+      <div class="ac-icon">🧠</div>
+      <div class="ac-text">
+        <div class="ac-title">Luyện tập thông minh</div>
+        <div class="ac-desc" id="adaptive-cta-desc">Tự động cá nhân hoá lộ trình ôn tập — không cần tự nghĩ nên học gì, hệ thống lo phần đó.</div>
+        <button type="button" class="ac-start-btn">Bắt đầu</button>
+      </div>
+      <svg class="ac-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+    </div>
+
     <div class="answerkey-link" id="answerkey-link">
       <span>📖 Xem đáp án &amp; giải thích toàn bộ <span id="answerkey-link-count">150</span> câu</span>
       <svg class="ak-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
@@ -1319,8 +1262,6 @@ function selectHp(hp){
   STORAGE_KEY = 'quiz_' + hp.id + '_results_v1';
   SETS = buildSets();
   document.getElementById('home-title').textContent = hp.name;
-  document.getElementById('home-eyebrow').textContent = `${QUESTIONS.length} câu · ${TOTAL_SETS} đề`;
-  document.getElementById('home-desc').textContent = `Chọn một đề để bắt đầu. Mỗi đề gồm ${SET_SIZE} câu, đáp án được xáo trộn ngẫu nhiên mỗi lần làm.`;
 }
 
 /* =========================================================
@@ -2096,33 +2037,6 @@ function renderHome(){
 
   document.getElementById('answerkey-link-count').textContent = QUESTIONS.length;
 
-  const specialCta = document.getElementById('special-cta');
-  const special = SPECIAL_SETS[currentHp.id];
-  specialCta.classList.toggle('hidden', !special);
-  if(special){
-    document.getElementById('special-cta-title').textContent = special.label;
-    document.getElementById('special-cta-desc').textContent = `${special.ids.length} ${special.desc}`;
-  }
-
-  // "Tiếp tục học": gợi ý đề đã làm nhưng điểm chưa tuyệt đối, ưu tiên đề có điểm % thấp nhất (đáng ôn
-  // lại nhất). Không có khái niệm "làm dở" thật sự (thoát giữa chừng không lưu điểm), nên đây là đề đã
-  // hoàn thành ít nhất 1 lần nhưng còn điểm thấp — vẫn đúng tinh thần "nên tiếp tục luyện lại đề này".
-  let continueIdx = null, continuePct = Infinity;
-  Object.keys(results).forEach(idxStr => {
-    const idx = Number(idxStr);
-    const r = results[idx];
-    const pct = r.total ? r.best / r.total : 1;
-    if(pct < 1 && pct < continuePct){ continueIdx = idx; continuePct = pct; }
-  });
-  const continueCta = document.getElementById('continue-set-cta');
-  continueCta.classList.toggle('hidden', continueIdx === null);
-  if(continueIdx !== null){
-    const r = results[continueIdx];
-    continueCta.dataset.setIndex = continueIdx;
-    document.getElementById('continue-set-title').textContent = `Tiếp tục Đề ${continueIdx + 1}`;
-    document.getElementById('continue-set-desc').textContent = `Đã làm ${r.best}/${r.total}`;
-  }
-
   let attemptedCount = 0;
   let totalPct = 0;
 
@@ -2162,10 +2076,6 @@ function renderHome(){
   document.getElementById('stat-mastered').textContent = `${s.masteredCount}/${s.totalQuestions}`;
   document.getElementById('stat-need-review').textContent = s.wrongCount;
   document.getElementById('stat-accuracy').textContent = attemptedCount ? Math.round(totalPct/attemptedCount)+'%' : '—';
-
-  document.getElementById('ph-pct').textContent = `${s.masteredPct}%`;
-  document.getElementById('ph-sub').textContent = `${s.masteredCount}/${s.totalQuestions} câu đã thuộc`;
-  document.getElementById('ph-fill').style.width = `${s.masteredPct}%`;
 }
 
 /* =========================================================
@@ -2448,14 +2358,6 @@ function startAdaptiveSession(hp){
 }
 document.getElementById('adaptive-cta').addEventListener('click', () => {
   if(currentHp) startAdaptiveSession(currentHp);
-});
-document.getElementById('special-cta').addEventListener('click', () => {
-  const special = currentHp && SPECIAL_SETS[currentHp.id];
-  if(special) startSpecialSession(currentHp, special);
-});
-document.getElementById('continue-set-cta').addEventListener('click', function(){
-  const idx = Number(this.dataset.setIndex);
-  if(!Number.isNaN(idx)) openModeModal(idx);
 });
 
 function stopTimer(){
